@@ -1,6 +1,6 @@
 [package]
 name = "js_typify_gostruct"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Tevinthuku <tevinthuku@gmail.com>"]
 edition = "2018"
 description = "A rust tool meant to convert a golang struct to a js type object."
