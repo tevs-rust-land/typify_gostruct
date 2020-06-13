@@ -14,7 +14,10 @@ fn main() {
     State string `json:"state" binding:"required"`
 }
     "#;
-    println!("{:?}", js_typify_gostruct::run(example.to_string())); // prints out type Region = { country:string; state:string; };
+    match js_typify_gostruct::transform(example.to_string()) {
+        Ok(results) => println!("{}", results); // prints out type Region = { country:string; state:string; };
+        Err(parse_errors) => println!("{:?}", parse_errors);
+    }
 }
 
 ```

@@ -12,7 +12,6 @@ macro_rules! try_wrap_err {
         }
     };
 }
-
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
         match $tokens.peek().map(|t| &t.token) {
@@ -166,7 +165,7 @@ where
     while !is_block_end(tokens.peek()) {
         match parse_declaration(tokens) {
             Some(Ok(statement)) => statements.push(statement),
-            None => return Some(Err(ParseError::UnknownError)),
+            None => return Some(Err(ParseError::UnexpectedEndOfFile)),
             Some(Err(error)) => return Some(Err(error)),
         }
     }
