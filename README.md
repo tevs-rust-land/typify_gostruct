@@ -15,13 +15,13 @@ fn main() {
 }
     "#;
     // converts to flow
-    match js_typify_gostruct::transform(example.to_string(), interpreter::TransformTo::Flow) {
+    match js_typify_gostruct::transform_to_flow(example.to_string()) {
         Ok(results) => println!("{}", results); // prints out type Region = { country:string; state:string; };
         Err(parse_errors) => println!("{:?}", parse_errors);
     }
 
     // converts to typescript
-    match js_typify_gostruct::transform(example.to_string(), interpreter::TransformTo::Typescript) {
+    match js_typify_gostruct::transform_to_typescript(example.to_string()) {
         Ok(results) => println!("{}", results); // prints out interface Region { country:string; state:string; };
         Err(parse_errors) => println!("{:?}", parse_errors);
     }
