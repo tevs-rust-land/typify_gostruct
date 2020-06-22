@@ -3,29 +3,39 @@ use std::iter::Peekable;
 use crate::scanner::scanner::*;
 use crate::treewalk::ast::*;
 
-pub fn interpret(tokens: &[GoStruct]) -> String {
+pub enum TransformTo {
+    Flow,
+    Typescript,
+}
+pub fn interpret(tokens: &[GoStruct], transform_to: TransformTo) -> String {
     let mut peekable_tokens = tokens.iter().peekable();
     let mut target = String::from("");
-    while let Some(derived_str) = interpret_struct(&mut peekable_tokens) {
+    while let Some(derived_str) = interpret_struct(&mut peekable_tokens, &transform_to) {
         target.push_str(&derived_str);
     }
 
     target
 }
 
-fn interpret_struct<'a, I>(tokens: &mut Peekable<I>) -> Option<String>
+fn interpret_struct<'a, I>(tokens: &mut Peekable<I>, transform_to: &TransformTo) -> Option<String>
 where
     I: Iterator<Item = &'a GoStruct>,
 {
     match tokens.peek() {
         Some(&GoStruct::StructDefinition(ref s)) => {
             let _ = tokens.next();
-            let temp_string = &("type ".to_string() + &s.name + " = ");
-            let temp_string = &(temp_string.to_string() + "{ ");
-            let temp_string = &(temp_string.to_string() + &interpret_struct_body(&s.body));
-            let temp_string = &(temp_string.to_string() + "};");
+            let mut interface = match transform_to {
+                crate::treewalk::interpreter::TransformTo::Flow => vec!["type ", &s.name, " ="],
+                crate::treewalk::interpreter::TransformTo::Typescript => {
+                    vec!["interface ", &s.name]
+                }
+            };
 
-            Some(temp_string.to_string())
+            let body = &interpret_struct_body(&s.body);
+            let mut struct_body = vec![" { ", body, "};"];
+            interface.append(&mut struct_body);
+            let result: String = interface.into_iter().collect();
+            Some(result)
         }
         Some(_) => {
             let _ = tokens.next();
@@ -37,87 +47,97 @@ where
 }
 
 fn interpret_struct_body(body: &GoStruct) -> String {
-    let mut res = "".to_owned();
-
+    let mut struct_body = vec!["".to_owned()];
     match body {
         GoStruct::Block(ref body) => {
             for statement in &body.statements {
                 match statement {
                     GoStruct::StructNameWithTypeOnly(name, typ) => {
-                        res.push_str(name);
-                        match typ {
-                            DataTypeEnum::TypeAny => res.push_str(":?any; "),
-                            DataTypeEnum::TypeNumber => res.push_str(":?number; "),
-                            DataTypeEnum::TypeString => res.push_str(":?string; "),
-                            DataTypeEnum::TypeNullNumber => res.push_str(":number | null; "),
-                            DataTypeEnum::TypeNullString => res.push_str(":string | number; "),
-                            DataTypeEnum::TypeBoolean => res.push_str(":boolean; "),
-                            DataTypeEnum::TypeDate => res.push_str(":Date; "),
-                        }
+                        struct_body.push(name.to_string());
+                        let data_type = match typ {
+                            DataTypeEnum::TypeAny => "?:any; ",
+                            DataTypeEnum::TypeNumber => "?:number; ",
+                            DataTypeEnum::TypeString => "?:string; ",
+                            DataTypeEnum::TypeNullNumber => ":number | null; ",
+                            DataTypeEnum::TypeNullString => ":string | null; ",
+                            DataTypeEnum::TypeBoolean => ":boolean; ",
+                            DataTypeEnum::TypeDate => ":number; ",
+                        };
+                        struct_body.push(data_type.to_owned());
                     }
                     GoStruct::StructWithJSONTags(name, typ, json) => {
-                        res.push_str(&interpret_json_properties(name.to_string(), *typ, json));
+                        let json_tags = interpret_json_properties(name.to_string(), *typ, json);
+                        struct_body.push(json_tags);
                     }
                     GoStruct::StructNameOnly(name) => {
-                        res.push_str(&("...".to_string()));
-                        res.push_str(name);
-                        res.push_str(&("; ".to_string()));
+                        let mut struct_name_only =
+                            vec!["...".to_string(), name.to_string(), "; ".to_string()];
+                        struct_body.append(&mut struct_name_only);
                     }
                     GoStruct::StructWithListAndType(name, typ) => {
-                        res.push_str(name);
-                        match typ {
-                            DataTypeEnum::TypeNumber => res.push_str(":number[]; "),
-                            DataTypeEnum::TypeString => res.push_str(":string[]; "),
-                            DataTypeEnum::TypeBoolean => res.push_str(":boolean[]; "),
-                            DataTypeEnum::TypeDate => res.push_str(":Date[]; "),
-                            _ => {}
-                        }
+                        let mut struct_with_type = vec![name.to_string()];
+                        let list_type = match typ {
+                            DataTypeEnum::TypeNumber => ":number[]; ",
+                            DataTypeEnum::TypeString => ":string[]; ",
+                            DataTypeEnum::TypeBoolean => ":boolean[]; ",
+                            DataTypeEnum::TypeDate => ":number[]; ",
+                            _ => "",
+                        };
+                        struct_with_type.push(list_type.to_string());
+                        struct_body.append(&mut struct_with_type)
                     }
                     GoStruct::StructWithListTypeAndJSONTags(name, typ, json) => {
-                        res.push_str(&interpret_json_list_properties(
-                            name.to_string(),
-                            *typ,
-                            json,
-                        ));
+                        let json_list_props =
+                            &interpret_json_list_properties(name.to_string(), *typ, json);
+                        struct_body.push(json_list_props.to_string());
                     }
-                    GoStruct::StructWithIdentifierAndJSONTags(name, literaltype, json) => res
-                        .push_str(&interpret_json_with_identifier(
+                    GoStruct::StructWithIdentifierAndJSONTags(name, literaltype, json) => {
+                        let identifier = &interpret_json_with_identifier(
                             name.to_string(),
                             literaltype.to_string(),
                             json,
-                        )),
+                        );
+                        struct_body.push(identifier.to_string());
+                    }
                     GoStruct::StructWithIdentifierTypeOnly(name, literaltype) => {
-                        res.push_str(name);
-                        res.push_str(":");
-                        res.push_str(literaltype);
-                        res.push_str("; ");
+                        let name = name.to_owned();
+                        let literaltype = literaltype.to_owned();
+                        let mut struct_with_type_only =
+                            vec![name, ":".to_string(), literaltype, "; ".to_string()];
+
+                        struct_body.append(&mut struct_with_type_only);
                     }
                     GoStruct::StructWithCustomListIdentifier(name, customidentifier) => {
-                        res.push_str(name);
-                        res.push_str(":");
-                        res.push_str(customidentifier);
-                        res.push_str("[]; ");
+                        let name = name.to_owned();
+                        let customidentifier = customidentifier.to_owned();
+                        let mut struct_with_custom_list_identifier =
+                            vec![name, ":".to_string(), customidentifier, "; ".to_string()];
+
+                        struct_body.append(&mut struct_with_custom_list_identifier);
                     }
                     GoStruct::StructWithCustomListIdentifierAndJSONTags(
                         name,
                         customidentifier,
                         json,
-                    ) => res.push_str(&interpret_json_with_custom_identifier(
-                        name.to_string(),
-                        customidentifier.to_string(),
-                        json,
-                    )),
+                    ) => {
+                        let custom_identifier = interpret_json_with_custom_identifier(
+                            name.to_string(),
+                            customidentifier.to_string(),
+                            json,
+                        );
+                        struct_body.push(custom_identifier);
+                    }
                     _ => {}
                 }
             }
         }
         _ => {}
     }
-    res.to_string()
+    struct_body.into_iter().collect()
 }
 
 fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruct>) -> String {
-    let mut json_prop = "".to_owned();
+    let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
     let mut temp_binding_type = ":?".to_owned();
     let type_string = match typ {
@@ -136,16 +156,13 @@ fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruc
             _ => {}
         }
     }
-
-    json_prop.push_str(&temp_name);
-    json_prop.push_str(&temp_binding_type);
-    json_prop.push_str(&type_string);
-
-    json_prop
+    let mut attributes = vec![temp_name, temp_binding_type, type_string.to_string()];
+    json_props.append(&mut attributes);
+    json_props.into_iter().collect()
 }
 
 fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruct>) -> String {
-    let mut json_prop = "".to_owned();
+    let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
     let mut temp_binding_type = ":?".to_owned();
     let type_string = match typ {
@@ -163,15 +180,13 @@ fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &Vec<Go
         }
     }
 
-    json_prop.push_str(&temp_name);
-    json_prop.push_str(&temp_binding_type);
-    json_prop.push_str(&type_string);
-
-    json_prop
+    let mut attributes = vec![temp_name, temp_binding_type, type_string.to_string()];
+    json_props.append(&mut attributes);
+    json_props.into_iter().collect()
 }
 
 fn interpret_json_with_identifier(name: String, typ: String, json: &Vec<GoStruct>) -> String {
-    let mut json_prop = "".to_owned();
+    let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
     let mut temp_binding_type = ":?".to_owned();
     for st in json {
@@ -181,12 +196,12 @@ fn interpret_json_with_identifier(name: String, typ: String, json: &Vec<GoStruct
             _ => {}
         }
     }
-    json_prop.push_str(&temp_name);
-    json_prop.push_str(&temp_binding_type);
-    json_prop.push_str(&typ);
-    json_prop.push_str("; ");
 
-    json_prop
+    let mut attributes = vec![temp_name, temp_binding_type, typ.to_string()];
+    attributes.push("; ".to_string());
+
+    json_props.append(&mut attributes);
+    json_props.into_iter().collect()
 }
 
 fn interpret_json_with_custom_identifier(
@@ -194,7 +209,7 @@ fn interpret_json_with_custom_identifier(
     typ: String,
     json: &Vec<GoStruct>,
 ) -> String {
-    let mut json_prop = "".to_owned();
+    let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
     let mut temp_binding_type = ":?".to_owned();
     for st in json {
@@ -204,10 +219,9 @@ fn interpret_json_with_custom_identifier(
             _ => {}
         }
     }
-    json_prop.push_str(&temp_name);
-    json_prop.push_str(&temp_binding_type);
-    json_prop.push_str(&typ);
-    json_prop.push_str("[]; ");
 
-    json_prop
+    let mut attributes = vec![temp_name, temp_binding_type, typ.to_string()];
+    attributes.push("[]; ".to_string());
+    json_props.append(&mut attributes);
+    json_props.into_iter().collect()
 }

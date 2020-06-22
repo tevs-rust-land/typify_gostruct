@@ -14,8 +14,15 @@ fn main() {
     State string `json:"state" binding:"required"`
 }
     "#;
-    match js_typify_gostruct::transform(example.to_string()) {
+    // converts to flow
+    match js_typify_gostruct::transform(example.to_string(), interpreter::TransformTo::Flow) {
         Ok(results) => println!("{}", results); // prints out type Region = { country:string; state:string; };
+        Err(parse_errors) => println!("{:?}", parse_errors);
+    }
+
+    // converts to typescript
+    match js_typify_gostruct::transform(example.to_string(), interpreter::TransformTo::Typescript) {
+        Ok(results) => println!("{}", results); // prints out interface Region { country:string; state:string; };
         Err(parse_errors) => println!("{:?}", parse_errors);
     }
 }
