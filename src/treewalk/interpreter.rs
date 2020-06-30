@@ -25,9 +25,11 @@ where
         Some(&GoStruct::StructDefinition(ref s)) => {
             let _ = tokens.next();
             let mut interface = match transform_to {
-                crate::treewalk::interpreter::TransformTo::Flow => vec!["type ", &s.name, " ="],
+                crate::treewalk::interpreter::TransformTo::Flow => {
+                    vec!["export type ", &s.name, " ="]
+                }
                 crate::treewalk::interpreter::TransformTo::Typescript => {
-                    vec!["interface ", &s.name]
+                    vec!["export interface ", &s.name]
                 }
             };
 
@@ -139,15 +141,15 @@ fn interpret_struct_body(body: &GoStruct) -> String {
 fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruct>) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
-    let mut temp_binding_type = ":?".to_owned();
+    let mut temp_binding_type = "?:".to_owned();
     let type_string = match typ {
         DataTypeEnum::TypeAny => "any; ",
         DataTypeEnum::TypeNumber => "number; ",
         DataTypeEnum::TypeString => "string; ",
         DataTypeEnum::TypeNullNumber => "number | null; ",
-        DataTypeEnum::TypeNullString => "string | number; ",
+        DataTypeEnum::TypeNullString => "string | null; ",
         DataTypeEnum::TypeBoolean => "boolean; ",
-        DataTypeEnum::TypeDate => "Date; ",
+        DataTypeEnum::TypeDate => "number; ",
     };
     for st in json {
         match st {
@@ -164,7 +166,7 @@ fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruc
 fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &Vec<GoStruct>) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
-    let mut temp_binding_type = ":?".to_owned();
+    let mut temp_binding_type = "?:".to_owned();
     let type_string = match typ {
         DataTypeEnum::TypeNumber => "number[]; ",
         DataTypeEnum::TypeString => "string[]; ",
@@ -188,7 +190,7 @@ fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &Vec<Go
 fn interpret_json_with_identifier(name: String, typ: String, json: &Vec<GoStruct>) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
-    let mut temp_binding_type = ":?".to_owned();
+    let mut temp_binding_type = "?:".to_owned();
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => temp_name = specified_name.to_string(),
@@ -211,7 +213,7 @@ fn interpret_json_with_custom_identifier(
 ) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name.to_owned();
-    let mut temp_binding_type = ":?".to_owned();
+    let mut temp_binding_type = "?:".to_owned();
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => temp_name = specified_name.to_string(),
