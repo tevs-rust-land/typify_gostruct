@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 use std::rc::Rc;
 
-use crate::scanner::scanner::*;
+use crate::scanner::*;
 use crate::treewalk::ast::*;
 
 macro_rules! try_wrap_err {
