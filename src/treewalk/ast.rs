@@ -1,4 +1,4 @@
-use crate::scanner::scanner::*;
+use crate::scanner::*;
 use std::rc::Rc;
 
 #[derive(Debug)]

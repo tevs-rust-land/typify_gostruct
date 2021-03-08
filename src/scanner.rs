@@ -44,11 +44,11 @@ impl Position {
         Position { line: 1, column: 1 }
     }
 
-    fn increment_column(&mut self) -> () {
+    fn increment_column(&mut self) {
         self.column += 1;
     }
 
-    fn increment_line(&mut self) -> () {
+    fn increment_line(&mut self) {
         self.line += 1;
         self.column = 1;
     }
@@ -76,11 +76,11 @@ struct Scanner<'a> {
 }
 
 fn is_digit(c: char) -> bool {
-    c >= '0' && c <= '9'
+    ('0'..='9').contains(&c)
 }
 
 fn is_alpha(c: char) -> bool {
-    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '.'
+    ('a'..='z').contains(&c) || ('A'..='Z').contains(&c) || c == '.'
 }
 
 fn is_alphanumeric(c: char) -> bool {
@@ -88,17 +88,11 @@ fn is_alphanumeric(c: char) -> bool {
 }
 
 fn is_nextline(c: char) -> bool {
-    match c {
-        '\n' => true,
-        _ => false,
-    }
+    matches!(c, '\n')
 }
 
 fn is_whitespace(c: char) -> bool {
-    match c {
-        ' ' | '\r' | '\t' => true,
-        _ => false,
-    }
+    matches!(c, ' ' | '\r' | '\t')
 }
 
 impl<'a> Scanner<'a> {
@@ -140,7 +134,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn advance_while(&mut self, condition: &dyn Fn(char) -> bool) -> () {
+    fn advance_while(&mut self, condition: &dyn Fn(char) -> bool) {
         while self.peek_check(condition) {
             self.advance();
         }

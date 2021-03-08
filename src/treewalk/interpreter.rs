@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::scanner::scanner::*;
+use crate::scanner::*;
 use crate::treewalk::ast::*;
 
 pub enum TransformTo {
