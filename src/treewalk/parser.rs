@@ -4,14 +4,6 @@ use std::rc::Rc;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
-macro_rules! try_wrap_err {
-    ($e:expr) => {
-        match $e {
-            Ok(e) => e,
-            Err(e) => return Some(Err(e)),
-        }
-    };
-}
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
         match $tokens.peek().map(|t| &t.token) {
@@ -58,10 +50,14 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<GoStruct>, Vec<ParseErro
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let mut peekable_tokens = tokens.iter().peekable();
-    while let Some(result) = parse_declaration(&mut peekable_tokens) {
+    loop {
+        let result = parse_declaration(&mut peekable_tokens);
         match result {
             Ok(statement) => {
                 statements.push(statement);
+            }
+            Err(ParseError::UnexpectedEndOfFile) => {
+                break;
             }
             Err(error) => {
                 errors.push(error);
@@ -75,7 +71,7 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<GoStruct>, Vec<ParseErro
     }
 }
 
-fn parse_declaration<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_declaration<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -102,36 +98,27 @@ where
         }
         Some(_) => {
             let _ = tokens.next();
-            Some(Ok(GoStruct::Unknown))
+            Ok(GoStruct::Unknown)
         }
-        None => None,
+        None => Err(ParseError::UnexpectedEndOfFile),
     }
 }
 
-fn parse_struct_declaration<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_struct_declaration<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let identifier = try_wrap_err!(consume_expected_identifier(tokens));
-    try_wrap_err!(consume_expected_token!(
-        tokens,
-        &Token::Struct,
-        RequiredElement::Struct
-    ));
-    try_wrap_err!(consume_expected_token!(
-        tokens,
-        &Token::LeftBrace,
-        RequiredElement::Block
-    ));
+    let identifier = consume_expected_identifier(tokens)?;
+    consume_expected_token!(tokens, &Token::Struct, RequiredElement::Struct)?;
+    consume_expected_token!(tokens, &Token::LeftBrace, RequiredElement::Block)?;
     let block = match parse_block(tokens) {
-        Some(Ok(block)) => block,
-        Some(err) => return Some(err),
-        None => return Some(Err(ParseError::UnexpectedEndOfFile)),
+        Ok(block) => block,
+        err => return err,
     };
-    Some(Ok(GoStruct::StructDefinition(Rc::new(StructDefinition {
+    Ok(GoStruct::StructDefinition(Rc::new(StructDefinition {
         name: identifier,
         body: block,
-    }))))
+    })))
 }
 
 fn consume_expected_identifier<'a, I>(tokens: &mut Peekable<I>) -> Result<String, ParseError>
@@ -146,168 +133,163 @@ where
     )
 }
 
-fn parse_block<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_block<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let mut statements = Vec::new();
     fn is_block_end(t: Option<&&TokenWithContext>) -> bool {
-        if let Some(&TokenWithContext {
-            token: Token::RightBrace,
-            ..
-        }) = t
-        {
-            return true;
-        } else {
-            return false;
-        }
+        matches!(
+            t,
+            Some(&TokenWithContext {
+                token: Token::RightBrace,
+                ..
+            })
+        )
     };
     while !is_block_end(tokens.peek()) {
         match parse_declaration(tokens) {
-            Some(Ok(statement)) => statements.push(statement),
-            None => return Some(Err(ParseError::UnexpectedEndOfFile)),
-            Some(Err(error)) => return Some(Err(error)),
+            Ok(statement) => statements.push(statement),
+            Err(error) => return Err(error),
         }
     }
     if is_block_end(tokens.peek()) {
         let _ = tokens.next();
-        Some(Ok(GoStruct::Block(Box::new(Block { statements }))))
+        Ok(GoStruct::Block(Box::new(Block { statements })))
     } else {
-        Some(Err(ParseError::UnexpectedEndOfFile))
+        Err(ParseError::UnexpectedEndOfFile)
     }
 }
 
 fn parse_identifier<'a, I>(
     identifier: String,
     tokens: &mut Peekable<I>,
-) -> Option<Result<GoStruct, ParseError>>
+) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let item = match tokens.peek().map(|t| &t.token) {
         Some(&Token::DataType(typ)) => {
             let _ = tokens.next();
-            Some(Ok(GoStruct::StructNameWithTypeOnly(identifier, typ)))
+            Ok(GoStruct::StructNameWithTypeOnly(identifier, typ))
         }
         Some(Token::Identifier(literal)) => {
             let _ = tokens.next();
-            Some(Ok(GoStruct::StructWithIdentifierTypeOnly(
+            Ok(GoStruct::StructWithIdentifierTypeOnly(
                 identifier,
                 literal.to_string(),
-            )))
+            ))
         }
         Some(&Token::NextLine) => {
             let _ = tokens.next();
-            Some(Ok(GoStruct::StructNameOnly(identifier)))
+            Ok(GoStruct::StructNameOnly(identifier))
         }
         Some(&Token::Graveaccent) => {
             let vec = Vec::new();
-            Some(Ok(GoStruct::StructWithJSONTags(
+            Ok(GoStruct::StructWithJSONTags(
                 identifier,
                 DataTypeEnum::TypeAny,
                 vec,
-            )))
+            ))
         }
         Some(&Token::LeftBracket) => {
             let _ = tokens.next();
-            Some(Ok(GoStruct::StructWithList(identifier)))
+            Ok(GoStruct::StructWithList(identifier))
         }
-        Some(_) => Some(Err(ParseError::UnknownError)),
-        None => Some(Err(ParseError::UnexpectedEndOfFile)),
+        Some(_) => Err(ParseError::UnknownError),
+        None => Err(ParseError::UnexpectedEndOfFile),
     };
 
     parse_identifier_to_backticks(item, tokens)
 }
 
 fn parse_identifier_to_backticks<'a, I>(
-    prev_item: Option<Result<GoStruct, ParseError>>,
+    prev_item: Result<GoStruct, ParseError>,
     tokens: &mut Peekable<I>,
-) -> Option<Result<GoStruct, ParseError>>
+) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let item = match (tokens.peek().map(|t| &t.token), prev_item) {
-        (Some(&Token::Graveaccent), Some(Ok(GoStruct::StructWithJSONTags(name, typ, _)))) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::StructWithJSONTags(name, typ, _))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Some(Ok(GoStruct::Block(b))) => {
-                    Some(Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)))
-                }
-                _ => Some(Err(ParseError::UnexpectedEndOfFile)),
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)),
+                _ => res,
             }
         }
-        (Some(&Token::Graveaccent), Some(Ok(GoStruct::StructNameWithTypeOnly(name, typ)))) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::StructNameWithTypeOnly(name, typ))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Some(Ok(GoStruct::Block(b))) => {
-                    Some(Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)))
-                }
-                _ => Some(Err(ParseError::UnexpectedEndOfFile)),
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)),
+                res => res,
             }
         }
-        (
-            Some(&Token::Graveaccent),
-            Some(Ok(GoStruct::StructWithIdentifierTypeOnly(name, literal))),
-        ) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::StructWithIdentifierTypeOnly(name, literal))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Some(Ok(GoStruct::Block(b))) => Some(Ok(
-                    GoStruct::StructWithIdentifierAndJSONTags(name, literal, b.statements),
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithIdentifierAndJSONTags(
+                    name,
+                    literal,
+                    b.statements,
                 )),
-                _ => Some(Err(ParseError::UnexpectedEndOfFile)),
+                _ => res,
             }
         }
-        (Some(&Token::RightBracket), Some(Ok(GoStruct::StructWithList(identifier)))) => {
+        (Some(&Token::RightBracket), Ok(GoStruct::StructWithList(identifier))) => {
             let _ = tokens.next();
             let item_type = match tokens.peek().map(|t| &t.token) {
                 Some(&Token::DataType(typ)) => {
                     let _ = tokens.next();
-                    Some(Ok(GoStruct::StructWithListAndType(identifier, typ)))
+                    Ok(GoStruct::StructWithListAndType(identifier, typ))
                 }
                 Some(Token::Identifier(customtype)) => {
                     let _ = tokens.next();
-                    Some(Ok(GoStruct::StructWithCustomListIdentifier(
+                    Ok(GoStruct::StructWithCustomListIdentifier(
                         identifier,
                         customtype.to_string(),
-                    )))
+                    ))
                 }
-                _ => {
+                Some(_) => Err(ParseError::UnknownError),
+                None => {
                     let _ = tokens.next();
-                    Some(Err(ParseError::UnexpectedEndOfFile))
+                    Err(ParseError::UnexpectedEndOfFile)
                 }
             };
             match (item_type, tokens.peek().map(|t| &t.token)) {
                 (
-                    Some(Ok(GoStruct::StructWithListAndType(identifier, typ))),
+                    Ok(GoStruct::StructWithListAndType(identifier, typ)),
                     Some(&Token::Graveaccent),
                 ) => {
                     let _ = tokens.next();
                     let res = parse_backtick_block(tokens);
                     match res {
-                        Some(Ok(GoStruct::Block(b))) => Some(Ok(
-                            GoStruct::StructWithListTypeAndJSONTags(identifier, typ, b.statements),
+                        Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithListTypeAndJSONTags(
+                            identifier,
+                            typ,
+                            b.statements,
                         )),
-                        _ => Some(Err(ParseError::UnexpectedEndOfFile)),
+                        _ => res,
                     }
                 }
                 (
-                    Some(Ok(GoStruct::StructWithCustomListIdentifier(identifier, customtype))),
+                    Ok(GoStruct::StructWithCustomListIdentifier(identifier, customtype)),
                     Some(&Token::Graveaccent),
                 ) => {
                     let _ = tokens.next();
                     let res = parse_backtick_block(tokens);
                     match res {
-                        Some(Ok(GoStruct::Block(b))) => {
-                            Some(Ok(GoStruct::StructWithCustomListIdentifierAndJSONTags(
+                        Ok(GoStruct::Block(b)) => {
+                            Ok(GoStruct::StructWithCustomListIdentifierAndJSONTags(
                                 identifier,
                                 customtype,
                                 b.statements,
-                            )))
+                            ))
                         }
-                        _ => Some(Err(ParseError::UnexpectedEndOfFile)),
+                        _ => res,
                     }
                 }
                 (p, Some(&Token::NextLine)) => {
@@ -316,7 +298,7 @@ where
                 }
                 _ => {
                     let _ = tokens.peek();
-                    Some(Err(ParseError::UnexpectedEndOfFile))
+                    Err(ParseError::UnexpectedEndOfFile)
                 }
             }
         }
@@ -325,71 +307,60 @@ where
     item
 }
 
-fn parse_backtick_block<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_backtick_block<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let mut statements = Vec::new();
     fn is_block_end(t: Option<&&TokenWithContext>) -> bool {
-        if let Some(&TokenWithContext {
-            token: Token::Graveaccent,
-            ..
-        }) = t
-        {
-            return true;
-        } else {
-            return false;
-        }
+        matches!(
+            t,
+            Some(&TokenWithContext {
+                token: Token::Graveaccent,
+                ..
+            })
+        )
     };
     while !is_block_end(tokens.peek()) {
         match parse_declaration(tokens) {
-            Some(Ok(statement)) => statements.push(statement),
-            None => return Some(Err(ParseError::UnknownError)),
-            Some(Err(error)) => return Some(Err(error)),
+            Ok(statement) => statements.push(statement),
+            other => return other,
         }
     }
     if is_block_end(tokens.peek()) {
         let _ = tokens.next();
-        Some(Ok(GoStruct::Block(Box::new(Block { statements }))))
+        Ok(GoStruct::Block(Box::new(Block { statements })))
     } else {
-        Some(Err(ParseError::UnexpectedEndOfFile))
+        Err(ParseError::UnexpectedEndOfFile)
     }
 }
 
-fn parse_json<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_json<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    try_wrap_err!(consume_expected_token!(
-        tokens,
-        &Token::Colon,
-        RequiredElement::Colon
-    ));
+    consume_expected_token!(tokens, &Token::Colon, RequiredElement::Colon)?;
 
-    let str_literal = try_wrap_err!(consume_expected_token_with_action!(
+    let str_literal = consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
         RequiredElement::StringLiteral
-    ));
-    Some(Ok(GoStruct::JSONName(str_literal)))
+    )?;
+    Ok(GoStruct::JSONName(str_literal))
 }
 
-fn parse_binding<'a, I>(tokens: &mut Peekable<I>) -> Option<Result<GoStruct, ParseError>>
+fn parse_binding<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    try_wrap_err!(consume_expected_token!(
-        tokens,
-        &Token::Colon,
-        RequiredElement::Colon
-    ));
+    consume_expected_token!(tokens, &Token::Colon, RequiredElement::Colon)?;
 
-    try_wrap_err!(consume_expected_token_with_action!(
+    consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
         RequiredElement::StringLiteral
-    ));
-    Some(Ok(GoStruct::Binding))
+    )?;
+    Ok(GoStruct::Binding)
 }
