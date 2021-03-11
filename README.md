@@ -16,15 +16,27 @@ fn main() {
     "#;
     // converts to flow
     match js_typify_gostruct::transform_to_flow(example.to_string()) {
-        Ok(results) => println!("{}", results); // prints out export type Region = { country:string; state:string; };
-        Err(parse_errors) => println!("{:?}", parse_errors);
+        Ok(results) => println!("{}", results), // prints out export type Region = { country:string; state:string; };
+        Err(parse_errors) => println!("{:?}", parse_errors),
     }
 
     // converts to typescript
     match js_typify_gostruct::transform_to_typescript(example.to_string()) {
-        Ok(results) => println!("{}", results); // prints out export interface Region { country:string; state:string; };
-        Err(parse_errors) => println!("{:?}", parse_errors);
+        Ok(results) => println!("{}", results), // prints out export interface Region { country:string; state:string; };
+        Err(parse_errors) => println!("{:?}", parse_errors),
     }
 }
 
+```
+
+### Running the examples
+
+The examples folder contains various examples of how the library works & is to be used.
+
+To run a specific example run the following command
+
+eg
+
+```
+cargo run --example flow
 ```

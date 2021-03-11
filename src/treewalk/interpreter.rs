@@ -3,9 +3,19 @@ use std::iter::Peekable;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
+#[derive(Copy, Clone)]
 pub enum TransformTo {
     Flow,
     Typescript,
+}
+
+impl TransformTo {
+    fn new_interface(self, name: &str) -> Vec<&str> {
+        match self {
+            TransformTo::Flow => vec!["export type ", name, " ="],
+            TransformTo::Typescript => vec!["export interface ", name],
+        }
+    }
 }
 pub fn interpret(tokens: &[GoStruct], transform_to: TransformTo) -> String {
     let mut peekable_tokens = tokens.iter().peekable();
@@ -13,7 +23,6 @@ pub fn interpret(tokens: &[GoStruct], transform_to: TransformTo) -> String {
     while let Some(derived_str) = interpret_struct(&mut peekable_tokens, &transform_to) {
         target.push_str(&derived_str);
     }
-
     target
 }
 
@@ -24,14 +33,7 @@ where
     match tokens.peek() {
         Some(&GoStruct::StructDefinition(ref s)) => {
             let _ = tokens.next();
-            let mut interface = match transform_to {
-                crate::treewalk::interpreter::TransformTo::Flow => {
-                    vec!["export type ", &s.name, " ="]
-                }
-                crate::treewalk::interpreter::TransformTo::Typescript => {
-                    vec!["export interface ", &s.name]
-                }
-            };
+            let mut interface = transform_to.new_interface(&s.name);
 
             let body = &interpret_struct_body(&s.body);
             let mut struct_body = vec![" { ", body, "};"];
