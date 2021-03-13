@@ -164,7 +164,7 @@ impl<'a> Scanner<'a> {
             "null.Float" => Token::DataType(Type::NullString),
             "null.Int" => Token::DataType(Type::NullNumber),
             "int" => Token::DataType(Type::Number),
-            "time.Time" => Token::DataType(Type::Date),
+            "time.Time" => Token::DataType(Type::String),
             "bool" => Token::DataType(Type::Boolean),
             identifier => Token::Identifier(identifier.into()),
         }
