@@ -41,12 +41,7 @@ where
             let result: String = interface.into_iter().collect();
             Some(result)
         }
-        Some(_) => {
-            let _ = tokens.next();
-
-            Some("".to_string())
-        }
-        None => None,
+        _ => None,
     }
 }
 
