@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::scanner::*;
+use crate::data_types::Type;
 use crate::treewalk::ast::*;
 
 #[derive(Copy, Clone)]
@@ -57,16 +57,8 @@ fn interpret_struct_body(body: &GoStruct) -> String {
             match statement {
                 GoStruct::StructNameWithTypeOnly(name, typ) => {
                     struct_body.push(name.to_string());
-                    let data_type = match typ {
-                        DataTypeEnum::TypeAny => "?:any; ",
-                        DataTypeEnum::TypeNumber => "?:number; ",
-                        DataTypeEnum::TypeString => "?:string; ",
-                        DataTypeEnum::TypeNullNumber => ":number | null; ",
-                        DataTypeEnum::TypeNullString => ":string | null; ",
-                        DataTypeEnum::TypeBoolean => ":boolean; ",
-                        DataTypeEnum::TypeDate => ":number; ",
-                    };
-                    struct_body.push(data_type.to_owned());
+                    let data_type = format!("?: {}; ", typ);
+                    struct_body.push(data_type);
                 }
                 GoStruct::StructWithJSONTags(name, typ, json) => {
                     let json_tags = interpret_json_properties(name.to_string(), *typ, json);
@@ -79,13 +71,7 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                 }
                 GoStruct::StructWithListAndType(name, typ) => {
                     let mut struct_with_type = vec![name.to_string()];
-                    let list_type = match typ {
-                        DataTypeEnum::TypeNumber => ":number[]; ",
-                        DataTypeEnum::TypeString => ":string[]; ",
-                        DataTypeEnum::TypeBoolean => ":boolean[]; ",
-                        DataTypeEnum::TypeDate => ":number[]; ",
-                        _ => "",
-                    };
+                    let list_type = format!(":{}[];", typ);
                     struct_with_type.push(list_type.to_string());
                     struct_body.append(&mut struct_with_type)
                 }
@@ -137,19 +123,12 @@ fn interpret_struct_body(body: &GoStruct) -> String {
     struct_body.into_iter().collect()
 }
 
-fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &[GoStruct]) -> String {
+fn interpret_json_properties(name: String, typ: Type, json: &[GoStruct]) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name;
     let mut temp_binding_type = "?:".to_owned();
-    let type_string = match typ {
-        DataTypeEnum::TypeAny => "any; ",
-        DataTypeEnum::TypeNumber => "number; ",
-        DataTypeEnum::TypeString => "string; ",
-        DataTypeEnum::TypeNullNumber => "number | null; ",
-        DataTypeEnum::TypeNullString => "string | null; ",
-        DataTypeEnum::TypeBoolean => "boolean; ",
-        DataTypeEnum::TypeDate => "number; ",
-    };
+
+    let type_string = format!("{}; ", typ);
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => temp_name = specified_name.to_string(),
@@ -157,22 +136,17 @@ fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &[GoStruct])
             _ => {}
         }
     }
-    let mut attributes = vec![temp_name, temp_binding_type, type_string.to_string()];
+    let mut attributes = vec![temp_name, temp_binding_type, type_string];
     json_props.append(&mut attributes);
     json_props.into_iter().collect()
 }
 
-fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &[GoStruct]) -> String {
+fn interpret_json_list_properties(name: String, typ: Type, json: &[GoStruct]) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name;
     let mut temp_binding_type = "?:".to_owned();
-    let type_string = match typ {
-        DataTypeEnum::TypeNumber => "number[]; ",
-        DataTypeEnum::TypeString => "string[]; ",
-        DataTypeEnum::TypeBoolean => "boolean[]; ",
-        DataTypeEnum::TypeDate => "Date[]; ",
-        _ => "",
-    };
+
+    let type_string = format!("{}[];", typ);
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => temp_name = specified_name.to_string(),
@@ -181,7 +155,7 @@ fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &[GoStr
         }
     }
 
-    let mut attributes = vec![temp_name, temp_binding_type, type_string.to_string()];
+    let mut attributes = vec![temp_name, temp_binding_type, type_string];
     json_props.append(&mut attributes);
     json_props.into_iter().collect()
 }

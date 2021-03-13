@@ -1,4 +1,4 @@
-use crate::scanner::*;
+use crate::data_types::Type;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -10,12 +10,12 @@ pub struct StructDefinition {
 #[derive(Debug)]
 pub enum GoStruct {
     StructNameOnly(String),
-    StructNameWithTypeOnly(String, DataTypeEnum),
-    StructWithJSONTags(String, DataTypeEnum, Vec<GoStruct>),
+    StructNameWithTypeOnly(String, Type),
+    StructWithJSONTags(String, Type, Vec<GoStruct>),
     StructWithList(String),
-    StructWithListAndType(String, DataTypeEnum),
+    StructWithListAndType(String, Type),
     StructWithIdentifierTypeOnly(String, String),
-    StructWithListTypeAndJSONTags(String, DataTypeEnum, Vec<GoStruct>),
+    StructWithListTypeAndJSONTags(String, Type, Vec<GoStruct>),
     StructWithCustomListIdentifier(String, String),
     StructWithCustomListIdentifierAndJSONTags(String, String, Vec<GoStruct>),
     StructWithIdentifierAndJSONTags(String, String, Vec<GoStruct>),

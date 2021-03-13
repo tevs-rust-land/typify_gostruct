@@ -1,6 +1,7 @@
 use std::iter::Peekable;
 use std::rc::Rc;
 
+use crate::data_types::Type;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
@@ -186,11 +187,7 @@ where
         }
         Some(&Token::Graveaccent) => {
             let vec = Vec::new();
-            Ok(GoStruct::StructWithJSONTags(
-                identifier,
-                DataTypeEnum::TypeAny,
-                vec,
-            ))
+            Ok(GoStruct::StructWithJSONTags(identifier, Type::Any, vec))
         }
         Some(&Token::LeftBracket) => {
             let _ = tokens.next();

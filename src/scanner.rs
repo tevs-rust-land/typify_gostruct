@@ -1,16 +1,7 @@
 use itertools::{multipeek, MultiPeek};
 use std::str;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DataTypeEnum {
-    TypeNumber,
-    TypeString,
-    TypeNullString,
-    TypeNullNumber,
-    TypeDate,
-    TypeBoolean,
-    TypeAny,
-}
+use crate::data_types::Type;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -30,7 +21,7 @@ pub enum Token {
     Struct,
     Binding,
     Json,
-    DataType(DataTypeEnum),
+    DataType(Type),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -166,15 +157,15 @@ impl<'a> Scanner<'a> {
             "binding" => Token::Binding,
             "json" => Token::Json,
             // data types
-            "int64" => Token::DataType(DataTypeEnum::TypeNumber),
-            "float64" => Token::DataType(DataTypeEnum::TypeNumber),
-            "string" => Token::DataType(DataTypeEnum::TypeString),
-            "null.String" => Token::DataType(DataTypeEnum::TypeNullString),
-            "null.Float" => Token::DataType(DataTypeEnum::TypeNullString),
-            "null.Int" => Token::DataType(DataTypeEnum::TypeNullNumber),
-            "int" => Token::DataType(DataTypeEnum::TypeNumber),
-            "time.Time" => Token::DataType(DataTypeEnum::TypeDate),
-            "bool" => Token::DataType(DataTypeEnum::TypeBoolean),
+            "int64" => Token::DataType(Type::Number),
+            "float64" => Token::DataType(Type::Number),
+            "string" => Token::DataType(Type::String),
+            "null.String" => Token::DataType(Type::NullString),
+            "null.Float" => Token::DataType(Type::NullString),
+            "null.Int" => Token::DataType(Type::NullNumber),
+            "int" => Token::DataType(Type::Number),
+            "time.Time" => Token::DataType(Type::Date),
+            "bool" => Token::DataType(Type::Boolean),
             identifier => Token::Identifier(identifier.into()),
         }
     }
