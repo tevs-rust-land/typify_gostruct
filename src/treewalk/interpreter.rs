@@ -55,32 +55,32 @@ fn interpret_struct_body(body: &GoStruct) -> String {
     if let GoStruct::Block(ref body) = body {
         for statement in &body.statements {
             match statement {
-                GoStruct::StructNameWithTypeOnly(name, typ) => {
+                GoStruct::FieldNameWithTypeOnly(name, typ) => {
                     struct_body.push(name.to_string());
                     let data_type = format!("?: {}; ", typ);
                     struct_body.push(data_type);
                 }
-                GoStruct::StructWithJSONTags(name, typ, json) => {
+                GoStruct::FieldWithJSONTags(name, typ, json) => {
                     let json_tags = interpret_json_properties(name.to_string(), *typ, json);
                     struct_body.push(json_tags);
                 }
-                GoStruct::StructNameOnly(name) => {
+                GoStruct::FieldNameOnly(name) => {
                     let mut struct_name_only =
                         vec!["...".to_string(), name.to_string(), "; ".to_string()];
                     struct_body.append(&mut struct_name_only);
                 }
-                GoStruct::StructWithListAndType(name, typ) => {
+                GoStruct::FieldWithListAndType(name, typ) => {
                     let mut struct_with_type = vec![name.to_string()];
                     let list_type = format!(":{}[];", typ);
                     struct_with_type.push(list_type.to_string());
                     struct_body.append(&mut struct_with_type)
                 }
-                GoStruct::StructWithListTypeAndJSONTags(name, typ, json) => {
+                GoStruct::FieldWithListTypeAndJSONTags(name, typ, json) => {
                     let json_list_props =
                         &interpret_json_list_properties(name.to_string(), *typ, json);
                     struct_body.push(json_list_props.to_string());
                 }
-                GoStruct::StructWithIdentifierAndJSONTags(name, literaltype, json) => {
+                GoStruct::FieldWithIdentifierAndJSONTags(name, literaltype, json) => {
                     let identifier = &interpret_json_with_identifier(
                         name.to_string(),
                         literaltype.to_string(),
@@ -88,7 +88,7 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                     );
                     struct_body.push(identifier.to_string());
                 }
-                GoStruct::StructWithIdentifierTypeOnly(name, literaltype) => {
+                GoStruct::FieldWithIdentifierTypeOnly(name, literaltype) => {
                     let name = name.to_owned();
                     let literaltype = literaltype.to_owned();
                     let mut struct_with_type_only =
@@ -96,7 +96,7 @@ fn interpret_struct_body(body: &GoStruct) -> String {
 
                     struct_body.append(&mut struct_with_type_only);
                 }
-                GoStruct::StructWithCustomListIdentifier(name, customidentifier) => {
+                GoStruct::FieldWithCustomListIdentifier(name, customidentifier) => {
                     let name = name.to_owned();
                     let customidentifier = customidentifier.to_owned();
                     let mut struct_with_custom_list_identifier =
@@ -104,7 +104,7 @@ fn interpret_struct_body(body: &GoStruct) -> String {
 
                     struct_body.append(&mut struct_with_custom_list_identifier);
                 }
-                GoStruct::StructWithCustomListIdentifierAndJSONTags(
+                GoStruct::FieldWithCustomListIdentifierAndJSONTags(
                     name,
                     customidentifier,
                     json,

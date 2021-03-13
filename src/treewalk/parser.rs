@@ -172,26 +172,26 @@ where
     let item = match tokens.peek().map(|t| &t.token) {
         Some(&Token::DataType(typ)) => {
             let _ = tokens.next();
-            Ok(GoStruct::StructNameWithTypeOnly(identifier, typ))
+            Ok(GoStruct::FieldNameWithTypeOnly(identifier, typ))
         }
         Some(Token::Identifier(literal)) => {
             let _ = tokens.next();
-            Ok(GoStruct::StructWithIdentifierTypeOnly(
+            Ok(GoStruct::FieldWithIdentifierTypeOnly(
                 identifier,
                 literal.to_string(),
             ))
         }
         Some(&Token::NextLine) => {
             let _ = tokens.next();
-            Ok(GoStruct::StructNameOnly(identifier))
+            Ok(GoStruct::FieldNameOnly(identifier))
         }
         Some(&Token::Graveaccent) => {
             let vec = Vec::new();
-            Ok(GoStruct::StructWithJSONTags(identifier, Type::Any, vec))
+            Ok(GoStruct::FieldWithJSONTags(identifier, Type::Any, vec))
         }
         Some(&Token::LeftBracket) => {
             let _ = tokens.next();
-            Ok(GoStruct::StructWithList(identifier))
+            Ok(GoStruct::FieldWithList(identifier))
         }
         Some(_) => Err(ParseError::UnknownError),
         None => Err(ParseError::UnexpectedEndOfFile),
@@ -208,27 +208,27 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let item = match (tokens.peek().map(|t| &t.token), prev_item) {
-        (Some(&Token::Graveaccent), Ok(GoStruct::StructWithJSONTags(name, typ, _))) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::FieldWithJSONTags(name, typ, _))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)),
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::FieldWithJSONTags(name, typ, b.statements)),
                 _ => res,
             }
         }
-        (Some(&Token::Graveaccent), Ok(GoStruct::StructNameWithTypeOnly(name, typ))) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::FieldNameWithTypeOnly(name, typ))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithJSONTags(name, typ, b.statements)),
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::FieldWithJSONTags(name, typ, b.statements)),
                 res => res,
             }
         }
-        (Some(&Token::Graveaccent), Ok(GoStruct::StructWithIdentifierTypeOnly(name, literal))) => {
+        (Some(&Token::Graveaccent), Ok(GoStruct::FieldWithIdentifierTypeOnly(name, literal))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens);
             match res {
-                Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithIdentifierAndJSONTags(
+                Ok(GoStruct::Block(b)) => Ok(GoStruct::FieldWithIdentifierAndJSONTags(
                     name,
                     literal,
                     b.statements,
@@ -236,16 +236,16 @@ where
                 _ => res,
             }
         }
-        (Some(&Token::RightBracket), Ok(GoStruct::StructWithList(identifier))) => {
+        (Some(&Token::RightBracket), Ok(GoStruct::FieldWithList(identifier))) => {
             let _ = tokens.next();
             let item_type = match tokens.peek().map(|t| &t.token) {
                 Some(&Token::DataType(typ)) => {
                     let _ = tokens.next();
-                    Ok(GoStruct::StructWithListAndType(identifier, typ))
+                    Ok(GoStruct::FieldWithListAndType(identifier, typ))
                 }
                 Some(Token::Identifier(customtype)) => {
                     let _ = tokens.next();
-                    Ok(GoStruct::StructWithCustomListIdentifier(
+                    Ok(GoStruct::FieldWithCustomListIdentifier(
                         identifier,
                         customtype.to_string(),
                     ))
@@ -258,13 +258,13 @@ where
             };
             match (item_type, tokens.peek().map(|t| &t.token)) {
                 (
-                    Ok(GoStruct::StructWithListAndType(identifier, typ)),
+                    Ok(GoStruct::FieldWithListAndType(identifier, typ)),
                     Some(&Token::Graveaccent),
                 ) => {
                     let _ = tokens.next();
                     let res = parse_backtick_block(tokens);
                     match res {
-                        Ok(GoStruct::Block(b)) => Ok(GoStruct::StructWithListTypeAndJSONTags(
+                        Ok(GoStruct::Block(b)) => Ok(GoStruct::FieldWithListTypeAndJSONTags(
                             identifier,
                             typ,
                             b.statements,
@@ -273,14 +273,14 @@ where
                     }
                 }
                 (
-                    Ok(GoStruct::StructWithCustomListIdentifier(identifier, customtype)),
+                    Ok(GoStruct::FieldWithCustomListIdentifier(identifier, customtype)),
                     Some(&Token::Graveaccent),
                 ) => {
                     let _ = tokens.next();
                     let res = parse_backtick_block(tokens);
                     match res {
                         Ok(GoStruct::Block(b)) => {
-                            Ok(GoStruct::StructWithCustomListIdentifierAndJSONTags(
+                            Ok(GoStruct::FieldWithCustomListIdentifierAndJSONTags(
                                 identifier,
                                 customtype,
                                 b.statements,
