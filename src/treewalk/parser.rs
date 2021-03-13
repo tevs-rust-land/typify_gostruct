@@ -1,6 +1,7 @@
 use std::iter::Peekable;
 use std::rc::Rc;
 
+use crate::data_types::DataTypeEnum;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 

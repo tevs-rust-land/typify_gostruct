@@ -1,4 +1,4 @@
-use crate::scanner::*;
+use crate::data_types::DataTypeEnum;
 use std::rc::Rc;
 
 #[derive(Debug)]

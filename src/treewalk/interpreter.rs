@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::scanner::*;
+use crate::data_types::DataTypeEnum;
 use crate::treewalk::ast::*;
 
 #[derive(Copy, Clone)]

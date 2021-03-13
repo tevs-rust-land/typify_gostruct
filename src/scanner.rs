@@ -1,16 +1,7 @@
 use itertools::{multipeek, MultiPeek};
 use std::str;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DataTypeEnum {
-    TypeNumber,
-    TypeString,
-    TypeNullString,
-    TypeNullNumber,
-    TypeDate,
-    TypeBoolean,
-    TypeAny,
-}
+use crate::data_types::DataTypeEnum;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
