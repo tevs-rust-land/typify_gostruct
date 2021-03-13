@@ -6,7 +6,6 @@ pub enum Type {
     String,
     NullString,
     NullNumber,
-    Date,
     Boolean,
     Any,
 }
@@ -18,7 +17,6 @@ impl fmt::Display for Type {
             Self::String => write!(f, "string"),
             Self::NullNumber => write!(f, "null | number"),
             Self::NullString => write!(f, "null | string"),
-            Self::Date => write!(f, "string"),
             Self::Boolean => write!(f, "boolean"),
             Self::Any => write!(f, "any"),
         }
