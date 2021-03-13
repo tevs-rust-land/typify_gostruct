@@ -187,7 +187,7 @@ where
         }
         Some(&Token::Graveaccent) => {
             let vec = Vec::new();
-            Ok(GoStruct::StructWithJSONTags(identifier, Type::TypeAny, vec))
+            Ok(GoStruct::StructWithJSONTags(identifier, Type::Any, vec))
         }
         Some(&Token::LeftBracket) => {
             let _ = tokens.next();

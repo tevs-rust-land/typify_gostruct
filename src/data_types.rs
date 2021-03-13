@@ -1,10 +1,10 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
-    TypeNumber,
-    TypeString,
-    TypeNullString,
-    TypeNullNumber,
-    TypeDate,
-    TypeBoolean,
-    TypeAny,
+    Number,
+    String,
+    NullString,
+    NullNumber,
+    Date,
+    Boolean,
+    Any,
 }
