@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::data_types::DataTypeEnum;
+use crate::data_types::Type;
 use crate::treewalk::ast::*;
 
 #[derive(Copy, Clone)]
@@ -58,13 +58,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                 GoStruct::StructNameWithTypeOnly(name, typ) => {
                     struct_body.push(name.to_string());
                     let data_type = match typ {
-                        DataTypeEnum::TypeAny => "?:any; ",
-                        DataTypeEnum::TypeNumber => "?:number; ",
-                        DataTypeEnum::TypeString => "?:string; ",
-                        DataTypeEnum::TypeNullNumber => ":number | null; ",
-                        DataTypeEnum::TypeNullString => ":string | null; ",
-                        DataTypeEnum::TypeBoolean => ":boolean; ",
-                        DataTypeEnum::TypeDate => ":number; ",
+                        Type::TypeAny => "?:any; ",
+                        Type::TypeNumber => "?:number; ",
+                        Type::TypeString => "?:string; ",
+                        Type::TypeNullNumber => ":number | null; ",
+                        Type::TypeNullString => ":string | null; ",
+                        Type::TypeBoolean => ":boolean; ",
+                        Type::TypeDate => ":number; ",
                     };
                     struct_body.push(data_type.to_owned());
                 }
@@ -80,10 +80,10 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                 GoStruct::StructWithListAndType(name, typ) => {
                     let mut struct_with_type = vec![name.to_string()];
                     let list_type = match typ {
-                        DataTypeEnum::TypeNumber => ":number[]; ",
-                        DataTypeEnum::TypeString => ":string[]; ",
-                        DataTypeEnum::TypeBoolean => ":boolean[]; ",
-                        DataTypeEnum::TypeDate => ":number[]; ",
+                        Type::TypeNumber => ":number[]; ",
+                        Type::TypeString => ":string[]; ",
+                        Type::TypeBoolean => ":boolean[]; ",
+                        Type::TypeDate => ":number[]; ",
                         _ => "",
                     };
                     struct_with_type.push(list_type.to_string());
@@ -137,18 +137,18 @@ fn interpret_struct_body(body: &GoStruct) -> String {
     struct_body.into_iter().collect()
 }
 
-fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &[GoStruct]) -> String {
+fn interpret_json_properties(name: String, typ: Type, json: &[GoStruct]) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name;
     let mut temp_binding_type = "?:".to_owned();
     let type_string = match typ {
-        DataTypeEnum::TypeAny => "any; ",
-        DataTypeEnum::TypeNumber => "number; ",
-        DataTypeEnum::TypeString => "string; ",
-        DataTypeEnum::TypeNullNumber => "number | null; ",
-        DataTypeEnum::TypeNullString => "string | null; ",
-        DataTypeEnum::TypeBoolean => "boolean; ",
-        DataTypeEnum::TypeDate => "number; ",
+        Type::TypeAny => "any; ",
+        Type::TypeNumber => "number; ",
+        Type::TypeString => "string; ",
+        Type::TypeNullNumber => "number | null; ",
+        Type::TypeNullString => "string | null; ",
+        Type::TypeBoolean => "boolean; ",
+        Type::TypeDate => "number; ",
     };
     for st in json {
         match st {
@@ -162,15 +162,15 @@ fn interpret_json_properties(name: String, typ: DataTypeEnum, json: &[GoStruct])
     json_props.into_iter().collect()
 }
 
-fn interpret_json_list_properties(name: String, typ: DataTypeEnum, json: &[GoStruct]) -> String {
+fn interpret_json_list_properties(name: String, typ: Type, json: &[GoStruct]) -> String {
     let mut json_props = vec!["".to_owned()];
     let mut temp_name = name;
     let mut temp_binding_type = "?:".to_owned();
     let type_string = match typ {
-        DataTypeEnum::TypeNumber => "number[]; ",
-        DataTypeEnum::TypeString => "string[]; ",
-        DataTypeEnum::TypeBoolean => "boolean[]; ",
-        DataTypeEnum::TypeDate => "Date[]; ",
+        Type::TypeNumber => "number[]; ",
+        Type::TypeString => "string[]; ",
+        Type::TypeBoolean => "boolean[]; ",
+        Type::TypeDate => "Date[]; ",
         _ => "",
     };
     for st in json {

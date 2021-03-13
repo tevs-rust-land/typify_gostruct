@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DataTypeEnum {
+pub enum Type {
     TypeNumber,
     TypeString,
     TypeNullString,
