@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter::Peekable;
 use std::rc::Rc;
 
@@ -5,6 +6,7 @@ use crate::data_types::Type;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
+// TODO: Will rethink this macros
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
         match $tokens.peek().map(|t| &t.token) {
@@ -32,22 +34,32 @@ macro_rules! consume_expected_token {
 }
 
 #[derive(Debug)]
-pub enum RequiredElement {
-    Identifier,
-    Block,
-    Struct,
-    Colon,
-    StringLiteral,
-}
-
-#[derive(Debug)]
 pub enum ParseError {
     UnexpectedEndOfFile,
     UnknownError,
-    Missing(RequiredElement, Lexeme, Position),
+    Missing(Token, Lexeme, Position),
 }
 
-pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<GoStruct>, Vec<ParseError>> {
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::UnexpectedEndOfFile => write!(f, "Unexpected End Of file"),
+            ParseError::UnknownError => write!(
+                f,
+                "We have encountered an unknown error. This is likely a bug with the library."
+            ),
+            ParseError::Missing(token, lexeme, Position { line, column, .. }) => {
+                write!(
+                    f,
+                    "Expected {} but found `{}` at line {} column {}",
+                    token, lexeme, line, column
+                )
+            }
+        }
+    }
+}
+
+pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<GoStruct>, Vec<String>> {
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let mut peekable_tokens = tokens.iter().peekable();
@@ -61,7 +73,7 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<GoStruct>, Vec<ParseErro
                 break;
             }
             Err(error) => {
-                errors.push(error);
+                errors.push(format!("{}", error));
             }
         }
     }
@@ -110,8 +122,8 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let identifier = consume_expected_identifier(tokens)?;
-    consume_expected_token!(tokens, &Token::Struct, RequiredElement::Struct)?;
-    consume_expected_token!(tokens, &Token::LeftBrace, RequiredElement::Block)?;
+    consume_expected_token!(tokens, &Token::Struct, Token::Struct)?;
+    consume_expected_token!(tokens, &Token::LeftBrace, Token::LeftBrace)?;
     let block = match parse_block(tokens) {
         Ok(block) => block,
         err => return err,
@@ -130,7 +142,7 @@ where
         tokens,
         &Token::Identifier(ref identifier),
         identifier.to_string(),
-        RequiredElement::Identifier
+        Token::Identifier("".to_string())
     )
 }
 
@@ -336,13 +348,13 @@ fn parse_json<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    consume_expected_token!(tokens, &Token::Colon, RequiredElement::Colon)?;
+    consume_expected_token!(tokens, &Token::Colon, Token::Colon)?;
 
     let str_literal = consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        RequiredElement::StringLiteral
+        Token::StringLiteral("".to_string())
     )?;
     Ok(GoStruct::JSONName(str_literal))
 }
@@ -351,13 +363,13 @@ fn parse_binding<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    consume_expected_token!(tokens, &Token::Colon, RequiredElement::Colon)?;
+    consume_expected_token!(tokens, &Token::Colon, Token::Colon)?;
 
     consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        RequiredElement::StringLiteral
+        Token::StringLiteral("".to_string())
     )?;
     Ok(GoStruct::Binding)
 }
