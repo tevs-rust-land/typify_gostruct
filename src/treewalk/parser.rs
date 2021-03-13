@@ -6,6 +6,7 @@ use crate::data_types::Type;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
+// TODO: Will rethink this macros
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
         match $tokens.peek().map(|t| &t.token) {
@@ -353,7 +354,7 @@ where
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        Token::StringLiteral("literal".to_string())
+        Token::StringLiteral("".to_string())
     )?;
     Ok(GoStruct::JSONName(str_literal))
 }
@@ -368,7 +369,7 @@ where
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        Token::StringLiteral("lireral".to_string())
+        Token::StringLiteral("".to_string())
     )?;
     Ok(GoStruct::Binding)
 }
