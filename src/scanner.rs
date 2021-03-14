@@ -16,7 +16,7 @@ pub enum Token {
     NextLine,
     LeftBracket,
     RightBracket,
-    Star,
+    Pointer,
     // Keywords
     Type,
     Struct,
@@ -38,7 +38,7 @@ impl fmt::Display for Token {
             Token::NextLine => write!(f, "New Line"),
             Token::LeftBracket => write!(f, "Left Bracket"),
             Token::RightBracket => write!(f, "Right Bracket"),
-            Token::Star => write!(f, "Asterics"),
+            Token::Pointer => write!(f, "Pointer"),
             Token::Type => write!(f, "type keyword"),
             Token::Struct => write!(f, "Struct keyword"),
             Token::Binding => write!(f, "Binding keyword"),
@@ -218,7 +218,7 @@ impl<'a> Scanner<'a> {
             '`' => Ok(Token::Graveaccent),
             '[' => Ok(Token::LeftBracket),
             ']' => Ok(Token::RightBracket),
-            '*' => Ok(Token::Star),
+            '*' => Ok(Token::Pointer),
             c if is_nextline(c) => Ok(Token::NextLine),
             c if is_whitespace(c) => Ok(Token::Whitespace),
             '"' => self.string(),
@@ -255,7 +255,7 @@ pub fn scan(source: &str) -> (Vec<TokenWithContext>, Vec<ScannerError>) {
             Ok(token_with_context) => {
                 match token_with_context.token {
                     Token::Whitespace => {}
-                    Token::Star => {}
+                    Token::Pointer => {}
                     _ => tokens.push(token_with_context),
                 };
             }
