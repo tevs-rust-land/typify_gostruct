@@ -1,5 +1,4 @@
 use itertools::{multipeek, MultiPeek};
-use std::fmt;
 use std::str;
 
 use crate::data_types::Type;
@@ -23,29 +22,6 @@ pub enum Token {
     Binding,
     Json,
     DataType(Type),
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Token::LeftBrace => write!(f, "LeftBrace"),
-            Token::RightBrace => write!(f, "RightBrace"),
-            Token::Colon => write!(f, "Colon"),
-            Token::Identifier(_) => write!(f, "Identifier"),
-            Token::StringLiteral(_) => write!(f, "String Lireral"),
-            Token::Whitespace => write!(f, "Whitespace"),
-            Token::Graveaccent => write!(f, "Graveaccent"),
-            Token::NextLine => write!(f, "New Line"),
-            Token::LeftBracket => write!(f, "Left Bracket"),
-            Token::RightBracket => write!(f, "Right Bracket"),
-            Token::Pointer => write!(f, "Pointer"),
-            Token::Type => write!(f, "type keyword"),
-            Token::Struct => write!(f, "Struct keyword"),
-            Token::Binding => write!(f, "Binding keyword"),
-            Token::Json => write!(f, "Json keyword"),
-            Token::DataType(data_type) => write!(f, "{}", data_type),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]

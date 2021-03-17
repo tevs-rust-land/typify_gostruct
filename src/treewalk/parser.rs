@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Display};
 use std::iter::Peekable;
 use std::rc::Rc;
 
@@ -6,7 +6,6 @@ use crate::data_types::Type;
 use crate::scanner::*;
 use crate::treewalk::ast::*;
 
-// TODO: Will rethink this macros
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
         match $tokens.peek().map(|t| &t.token) {
@@ -34,10 +33,30 @@ macro_rules! consume_expected_token {
 }
 
 #[derive(Debug)]
+pub enum RequiredElements {
+    StringLiteral,
+    Struct,
+    LeftBrace,
+    Identifier,
+    Colon,
+}
+
+impl Display for RequiredElements {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RequiredElements::StringLiteral => write!(f, "StringLiteral"),
+            RequiredElements::Struct => write!(f, "Struct"),
+            RequiredElements::LeftBrace => write!(f, "LeftBrace"),
+            RequiredElements::Identifier => write!(f, "Identifier"),
+            RequiredElements::Colon => write!(f, "Colon"),
+        }
+    }
+}
+#[derive(Debug)]
 pub enum ParseError {
     UnexpectedEndOfFile,
     UnknownError,
-    Missing(Token, Lexeme, Position),
+    Missing(RequiredElements, Lexeme, Position),
 }
 
 impl fmt::Display for ParseError {
@@ -122,8 +141,8 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let identifier = consume_expected_identifier(tokens)?;
-    consume_expected_token!(tokens, &Token::Struct, Token::Struct)?;
-    consume_expected_token!(tokens, &Token::LeftBrace, Token::LeftBrace)?;
+    consume_expected_token!(tokens, &Token::Struct, RequiredElements::Struct)?;
+    consume_expected_token!(tokens, &Token::LeftBrace, RequiredElements::LeftBrace)?;
     let block = match parse_block(tokens) {
         Ok(block) => block,
         err => return err,
@@ -142,7 +161,7 @@ where
         tokens,
         &Token::Identifier(ref identifier),
         identifier.to_string(),
-        Token::Identifier("".to_string())
+        RequiredElements::Identifier
     )
 }
 
@@ -348,13 +367,13 @@ fn parse_json<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    consume_expected_token!(tokens, &Token::Colon, Token::Colon)?;
+    consume_expected_token!(tokens, &Token::Colon, RequiredElements::Colon)?;
 
     let str_literal = consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        Token::StringLiteral("".to_string())
+        RequiredElements::StringLiteral
     )?;
     Ok(GoStruct::JSONName(str_literal))
 }
@@ -363,13 +382,13 @@ fn parse_binding<'a, I>(tokens: &mut Peekable<I>) -> Result<GoStruct, ParseError
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    consume_expected_token!(tokens, &Token::Colon, Token::Colon)?;
+    consume_expected_token!(tokens, &Token::Colon, RequiredElements::Colon)?;
 
     consume_expected_token_with_action!(
         tokens,
         &Token::StringLiteral(ref literal),
         literal.to_string(),
-        Token::StringLiteral("".to_string())
+        RequiredElements::StringLiteral
     )?;
     Ok(GoStruct::Binding)
 }
