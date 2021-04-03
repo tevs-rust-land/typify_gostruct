@@ -1,7 +1,6 @@
-use itertools::{multipeek, MultiPeek};
-use std::str;
-
 use crate::data_types::Type;
+use std::iter::Peekable;
+use std::str;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -57,13 +56,12 @@ pub struct TokenWithContext {
 #[derive(Debug, Clone)]
 pub enum ScannerError {
     MissingStringTerminator(Position),
-    // UnexpectedCharacter(char, Position),
 }
 
 struct Scanner<'a> {
     current_position: Position,
     current_lexeme: String,
-    source: MultiPeek<str::Chars<'a>>,
+    source: Peekable<str::Chars<'a>>,
 }
 
 fn is_digit(c: char) -> bool {
@@ -91,7 +89,7 @@ impl<'a> Scanner<'a> {
         Scanner {
             current_position: Position::initial(),
             current_lexeme: "".into(),
-            source: multipeek(source.chars()),
+            source: source.chars().into_iter().peekable(),
         }
     }
 
@@ -109,7 +107,6 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek_check(&mut self, check: &dyn Fn(char) -> bool) -> bool {
-        self.source.reset_peek();
         match self.source.peek() {
             Some(&c) => check(c),
             None => false,
