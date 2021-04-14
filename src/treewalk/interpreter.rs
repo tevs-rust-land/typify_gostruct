@@ -9,6 +9,11 @@ pub enum TransformTo {
     Typescript,
 }
 
+enum JSONTags {
+    FieldWithTags(String),
+    OmitField,
+}
+
 impl TransformTo {
     fn new_interface(self, name: &str) -> Vec<&str> {
         match self {
@@ -60,8 +65,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                 }
                 GoStruct::FieldWithJSONTags(name, field_type, json) => {
                     let json_tags = interpret_json_tags(name.to_string(), *field_type, json);
-                    let json_tags = format!("{}; ", json_tags);
-                    struct_body.push(json_tags);
+                    match json_tags {
+                        JSONTags::OmitField => {}
+                        JSONTags::FieldWithTags(json_tags) => {
+                            let json_tags = format!("{}; ", json_tags);
+                            struct_body.push(json_tags);
+                        }
+                    }
                 }
                 GoStruct::FieldNameOnly(name) => {
                     let field_name_only = format!("... {};", name);
@@ -73,8 +83,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                 }
                 GoStruct::FieldWithListTypeAndJSONTags(name, field_type, json) => {
                     let json_list_props = interpret_json_tags(name.to_string(), *field_type, json);
-                    let json_list_props = format!("{}[];", json_list_props);
-                    struct_body.push(json_list_props);
+                    match json_list_props {
+                        JSONTags::OmitField => {}
+                        JSONTags::FieldWithTags(json_list_props) => {
+                            let json_list_props = format!("{}[];", json_list_props);
+                            struct_body.push(json_list_props);
+                        }
+                    }
                 }
                 GoStruct::FieldWithIdentifierAndJSONTags(name, literaltype, json) => {
                     let identifier = interpret_json_tags_with_custom_field_type(
@@ -114,17 +129,18 @@ fn interpret_struct_body(body: &GoStruct) -> String {
     struct_body.into_iter().collect()
 }
 
-fn interpret_json_tags(name: String, field_type: Type, json: &[GoStruct]) -> String {
+fn interpret_json_tags(name: String, field_type: Type, json: &[GoStruct]) -> JSONTags {
     let mut name = name;
     let mut is_prop_required = "?:".to_owned();
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => name = specified_name.to_string(),
+            GoStruct::IgnoreField => return JSONTags::OmitField,
             GoStruct::Binding => is_prop_required = ":".to_string(),
             _ => {}
         }
     }
-    format!("{}{}{}", name, is_prop_required, field_type)
+    JSONTags::FieldWithTags(format!("{}{}{}", name, is_prop_required, field_type))
 }
 
 fn interpret_json_tags_with_custom_field_type(
