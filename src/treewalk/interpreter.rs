@@ -97,8 +97,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                         literaltype.to_string(),
                         json,
                     );
-                    let identifier = format!("{}; ", identifier);
-                    struct_body.push(identifier);
+                    match identifier {
+                        JSONTags::FieldWithTags(identifier) => {
+                            let identifier = format!("{}; ", identifier);
+                            struct_body.push(identifier);
+                        }
+                        JSONTags::OmitField => {}
+                    }
                 }
                 GoStruct::FieldWithIdentifierTypeOnly(name, literaltype) => {
                     let field_with_literal_type = format!("{}: {}; ", name, literaltype);
@@ -119,8 +124,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                         customidentifier.to_string(),
                         json,
                     );
-                    let field_with_custom_type = format!("{}[]; ", field_with_custom_type);
-                    struct_body.push(field_with_custom_type);
+                    match field_with_custom_type {
+                        JSONTags::FieldWithTags(field_with_custom_type) => {
+                            let field_with_custom_type = format!("{}[]; ", field_with_custom_type);
+                            struct_body.push(field_with_custom_type);
+                        }
+                        JSONTags::OmitField => {}
+                    }
                 }
                 _ => {}
             }
@@ -135,10 +145,12 @@ fn interpret_json_tags(name: String, field_type: Type, json: &[GoStruct]) -> JSO
     for st in json {
         match st {
             GoStruct::JSONName(specified_name) => name = specified_name.to_string(),
-            GoStruct::IgnoreField => return JSONTags::OmitField,
             GoStruct::Binding => is_prop_required = ":".to_string(),
             _ => {}
         }
+    }
+    if name == *"-" {
+        return JSONTags::OmitField;
     }
     JSONTags::FieldWithTags(format!("{}{}{}", name, is_prop_required, field_type))
 }
@@ -147,7 +159,7 @@ fn interpret_json_tags_with_custom_field_type(
     name: String,
     field_type: String,
     json: &[GoStruct],
-) -> String {
+) -> JSONTags {
     let mut name = name;
     let mut is_prop_required = "?:".to_owned();
     for st in json {
@@ -157,5 +169,8 @@ fn interpret_json_tags_with_custom_field_type(
             _ => {}
         }
     }
-    format!("{}{}{}", name, is_prop_required, field_type)
+    if name == *"-" {
+        return JSONTags::OmitField;
+    }
+    JSONTags::FieldWithTags(format!("{}{}{}", name, is_prop_required, field_type))
 }

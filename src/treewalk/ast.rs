@@ -24,7 +24,6 @@ pub enum GoStruct {
     JSONName(String),
     Binding,
     Unknown,
-    IgnoreField,
 }
 
 #[derive(Debug)]

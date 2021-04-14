@@ -375,9 +375,6 @@ where
         literal.to_string(),
         RequiredElements::StringLiteral
     )?;
-    if str_literal.as_str() == "-" {
-        return Ok(GoStruct::IgnoreField);
-    }
     Ok(GoStruct::JSONName(str_literal))
 }
 
