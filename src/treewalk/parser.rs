@@ -392,3 +392,6 @@ where
     )?;
     Ok(GoStruct::Binding)
 }
+
+// TODO: Break down the parse_identifier_to_backticks method to smaller functions
+// TODO: Rename the parser methods & Struct definition
