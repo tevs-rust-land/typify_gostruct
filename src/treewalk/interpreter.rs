@@ -1,17 +1,11 @@
 use std::iter::Peekable;
 
-use crate::data_types::Type;
 use crate::treewalk::ast::*;
 
 #[derive(Copy, Clone)]
 pub enum TransformTo {
     Flow,
     Typescript,
-}
-
-enum JSONTags {
-    FieldWithTags(String),
-    OmitField,
 }
 
 impl TransformTo {
@@ -64,14 +58,11 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                     struct_body.push(field_type);
                 }
                 GoStruct::FieldWithJSONTags(name, field_type, json) => {
-                    let json_tags = interpret_json_tags(name.to_string(), *field_type, json);
-                    match json_tags {
-                        JSONTags::OmitField => {}
-                        JSONTags::FieldWithTags(json_tags) => {
-                            let json_tags = format!("{}; ", json_tags);
-                            struct_body.push(json_tags);
-                        }
-                    }
+                    let field_type: String = format!("{}", field_type);
+                    let json_tags = interpret_json_tags(name.to_string(), field_type, json)
+                        .map(|s| format!("{}; ", s))
+                        .unwrap_or_default();
+                    struct_body.push(json_tags);
                 }
                 GoStruct::FieldNameOnly(name) => {
                     let field_name_only = format!("... {};", name);
@@ -82,28 +73,18 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                     struct_body.push(field_with_type_list)
                 }
                 GoStruct::FieldWithListTypeAndJSONTags(name, field_type, json) => {
-                    let json_list_props = interpret_json_tags(name.to_string(), *field_type, json);
-                    match json_list_props {
-                        JSONTags::OmitField => {}
-                        JSONTags::FieldWithTags(json_list_props) => {
-                            let json_list_props = format!("{}[];", json_list_props);
-                            struct_body.push(json_list_props);
-                        }
-                    }
+                    let field_type: String = format!("{}", field_type);
+                    let json_list_props = interpret_json_tags(name.to_string(), field_type, json)
+                        .map(|s| format!("{}[];", s))
+                        .unwrap_or_default();
+                    struct_body.push(json_list_props);
                 }
                 GoStruct::FieldWithIdentifierAndJSONTags(name, literaltype, json) => {
-                    let identifier = interpret_json_tags_with_custom_field_type(
-                        name.to_string(),
-                        literaltype.to_string(),
-                        json,
-                    );
-                    match identifier {
-                        JSONTags::FieldWithTags(identifier) => {
-                            let identifier = format!("{}; ", identifier);
-                            struct_body.push(identifier);
-                        }
-                        JSONTags::OmitField => {}
-                    }
+                    let identifier =
+                        interpret_json_tags(name.to_string(), literaltype.to_string(), json)
+                            .map(|s| format!("{};", s))
+                            .unwrap_or_default();
+                    struct_body.push(identifier);
                 }
                 GoStruct::FieldWithIdentifierTypeOnly(name, literaltype) => {
                     let field_with_literal_type = format!("{}: {}; ", name, literaltype);
@@ -119,18 +100,13 @@ fn interpret_struct_body(body: &GoStruct) -> String {
                     customidentifier,
                     json,
                 ) => {
-                    let field_with_custom_type = interpret_json_tags_with_custom_field_type(
-                        name.to_string(),
-                        customidentifier.to_string(),
-                        json,
-                    );
-                    match field_with_custom_type {
-                        JSONTags::FieldWithTags(field_with_custom_type) => {
-                            let field_with_custom_type = format!("{}[]; ", field_with_custom_type);
-                            struct_body.push(field_with_custom_type);
-                        }
-                        JSONTags::OmitField => {}
-                    }
+                    let field_with_custom_type =
+                        interpret_json_tags(name.to_string(), customidentifier.to_string(), json);
+                    let field_with_custom_type = field_with_custom_type
+                        .map(|s| format!("{}[];", s))
+                        .unwrap_or_default();
+
+                    struct_body.push(field_with_custom_type)
                 }
                 _ => {}
             }
@@ -139,38 +115,15 @@ fn interpret_struct_body(body: &GoStruct) -> String {
     struct_body.into_iter().collect()
 }
 
-fn interpret_json_tags(name: String, field_type: Type, json: &[GoStruct]) -> JSONTags {
+fn interpret_json_tags(name: String, field_type: String, json: &[GoStruct]) -> Option<String> {
     let mut name = name;
-    let mut is_prop_required = "?:".to_owned();
     for st in json {
-        match st {
-            GoStruct::JSONName(specified_name) => name = specified_name.to_string(),
-            GoStruct::Binding => is_prop_required = ":".to_string(),
-            _ => {}
+        if let GoStruct::JSONName(specified_name) = st {
+            name = specified_name.to_string()
         }
     }
     if name == *"-" {
-        return JSONTags::OmitField;
+        return None;
     }
-    JSONTags::FieldWithTags(format!("{}{}{}", name, is_prop_required, field_type))
-}
-
-fn interpret_json_tags_with_custom_field_type(
-    name: String,
-    field_type: String,
-    json: &[GoStruct],
-) -> JSONTags {
-    let mut name = name;
-    let mut is_prop_required = "?:".to_owned();
-    for st in json {
-        match st {
-            GoStruct::JSONName(specified_name) => name = specified_name.to_string(),
-            GoStruct::Binding => is_prop_required = ":".to_string(),
-            _ => {}
-        }
-    }
-    if name == *"-" {
-        return JSONTags::OmitField;
-    }
-    JSONTags::FieldWithTags(format!("{}{}{}", name, is_prop_required, field_type))
+    Some(format!("{}:{}", name, field_type))
 }
