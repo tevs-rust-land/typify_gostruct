@@ -9,10 +9,12 @@ pub enum AST {
 }
 
 pub struct FieldName(String);
-pub enum Field {
-    One(FieldName, DataType),
-    List(FieldName, DataType),
+
+pub enum FieldType {
+    One,
+    List,
 }
+pub struct Field(FieldName, FieldType, DataType);
 
 pub enum DataType {
     Number,
