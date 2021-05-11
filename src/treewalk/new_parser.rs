@@ -205,9 +205,8 @@ where
             )))
         }
         (Token::RightBracket, AST::Field(new_ast::Field::Plain(field_name, _field_type))) => {
-            let ast_after_closing_bracket =
-                parse_token_immediately_after_closing_right_bracket(field_name, tokens)?;
-            parse_grey_accent_on_list(ast_after_closing_bracket, tokens)
+            let field_list_type = parse_field_with_list_type(field_name, tokens)?;
+            parse_grey_accent_tokens_on_list_type(field_list_type, tokens)
         }
         (_, p) => {
             let _ = tokens.next();
@@ -243,7 +242,7 @@ where
     }
 }
 
-fn parse_token_immediately_after_closing_right_bracket<'a, I>(
+fn parse_field_with_list_type<'a, I>(
     field_name: FieldName,
     tokens: &mut Peekable<I>,
 ) -> Result<AST, ParseError>
@@ -273,7 +272,7 @@ where
     }
 }
 
-fn parse_grey_accent_on_list<'a, I>(
+fn parse_grey_accent_tokens_on_list_type<'a, I>(
     ast_before: AST,
     tokens: &mut Peekable<I>,
 ) -> Result<AST, ParseError>
