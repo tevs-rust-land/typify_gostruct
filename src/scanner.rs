@@ -1,4 +1,4 @@
-use crate::data_types::Type;
+use crate::treewalk::new_ast::DataType;
 use std::iter::Peekable;
 use std::str;
 
@@ -20,7 +20,7 @@ pub enum Token {
     Struct,
     Binding,
     Json,
-    DataType(Type),
+    DataType(DataType),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -154,15 +154,12 @@ impl<'a> Scanner<'a> {
             "binding" => Token::Binding,
             "json" => Token::Json,
             // data types
-            "int64" => Token::DataType(Type::Number),
-            "float64" => Token::DataType(Type::Number),
-            "string" => Token::DataType(Type::String),
-            "null.String" => Token::DataType(Type::NullString),
-            "null.Float" => Token::DataType(Type::NullString),
-            "null.Int" => Token::DataType(Type::NullNumber),
-            "int" => Token::DataType(Type::Number),
-            "time.Time" => Token::DataType(Type::String),
-            "bool" => Token::DataType(Type::Boolean),
+            "int64" => Token::DataType(DataType::Number),
+            "float64" => Token::DataType(DataType::Number),
+            "string" => Token::DataType(DataType::String),
+            "int" => Token::DataType(DataType::Number),
+            "time.Time" => Token::DataType(DataType::String),
+            "bool" => Token::DataType(DataType::Boolean),
             identifier => Token::Identifier(identifier.into()),
         }
     }
