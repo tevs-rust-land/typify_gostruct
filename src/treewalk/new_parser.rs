@@ -2,7 +2,7 @@ use crate::scanner::{Token, TokenWithContext};
 use crate::treewalk::new_ast::{ParseError, RequiredElements, StructDeclaration, AST};
 use std::iter::Peekable;
 
-use super::new_ast;
+use super::new_ast::{self, FieldName};
 
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
@@ -158,7 +158,6 @@ where
         Token::Graveaccent => {
             let vec = Vec::new();
             let field_name = new_ast::FieldName(identifier);
-            // TODO: Check if this type is valid
             let field_type = new_ast::FieldType::One(new_ast::DataType::NotSpecified);
             let field = new_ast::Field::WithWithTags(field_name, field_type, vec);
             Ok(AST::Field(field))
@@ -166,7 +165,6 @@ where
         Token::LeftBracket => {
             let _ = tokens.next();
             let field_name = new_ast::FieldName(identifier);
-            // TODO: Check if this type is valid
             let field_type = new_ast::FieldType::List(new_ast::DataType::NotSpecified);
             let field = new_ast::Field::Plain(field_name, field_type);
             Ok(AST::Field(field))
@@ -187,7 +185,8 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
-    let item = match (current_element.token.clone(), prev_item) {
+
+    match (current_element.token.clone(), prev_item) {
         (
             Token::Graveaccent,
             AST::Field(new_ast::Field::WithWithTags(field_name, field_type, ve)),
@@ -206,52 +205,15 @@ where
             )))
         }
         (Token::RightBracket, AST::Field(new_ast::Field::Plain(field_name, _field_type))) => {
-            let token = tokens.next().ok_or(ParseError::UnexpectedEndOfFile)?;
-            let item = match &token.token {
-                Token::DataType(specified_type) => {
-                    let _ = tokens.next();
-                    let specified_type = new_ast::FieldType::List(specified_type.clone());
-                    Ok(AST::Field(new_ast::Field::Plain(
-                        field_name,
-                        specified_type,
-                    )))
-                }
-                Token::Identifier(custom_type) => {
-                    let _ = tokens.next();
-                    let specified_type =
-                        new_ast::FieldType::One(new_ast::DataType::Custom(custom_type.clone()));
-                    Ok(AST::Field(new_ast::Field::Plain(
-                        field_name,
-                        specified_type,
-                    )))
-                }
-                _ => Err(ParseError::UnexpectedElement(token.lexeme.clone())),
-            };
-            let item = item?;
-            let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
-            match (item, &current_element.token) {
-                (
-                    new_ast::AST::Field(new_ast::Field::Plain(field_name, specified_type)),
-                    Token::Graveaccent,
-                ) => {
-                    let _ = tokens.next();
-                    let res = parse_backtick_block(tokens)?;
-                    let field = new_ast::Field::WithWithTags(field_name, specified_type, res);
-                    Ok(new_ast::AST::Field(field))
-                }
-                (p, Token::NextLine) => {
-                    let _ = tokens.next();
-                    Ok(p)
-                }
-                _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
-            }
+            let ast_after_closing_bracket =
+                parse_token_immediately_after_closing_right_bracket(field_name, tokens)?;
+            parse_grey_accent_on_list(ast_after_closing_bracket, tokens)
         }
         (_, p) => {
             let _ = tokens.next();
             Ok(p)
         }
-    };
-    item
+    }
 }
 
 fn parse_backtick_block<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
@@ -280,3 +242,62 @@ where
         Err(ParseError::UnexpectedEndOfFile)
     }
 }
+
+fn parse_token_immediately_after_closing_right_bracket<'a, I>(
+    field_name: FieldName,
+    tokens: &mut Peekable<I>,
+) -> Result<AST, ParseError>
+where
+    I: Iterator<Item = &'a TokenWithContext>,
+{
+    let token = tokens.next().ok_or(ParseError::UnexpectedEndOfFile)?;
+    match &token.token {
+        Token::DataType(specified_type) => {
+            let _ = tokens.next();
+            let specified_type = new_ast::FieldType::List(specified_type.clone());
+            Ok(AST::Field(new_ast::Field::Plain(
+                field_name,
+                specified_type,
+            )))
+        }
+        Token::Identifier(custom_type) => {
+            let _ = tokens.next();
+            let specified_type =
+                new_ast::FieldType::One(new_ast::DataType::Custom(custom_type.clone()));
+            Ok(AST::Field(new_ast::Field::Plain(
+                field_name,
+                specified_type,
+            )))
+        }
+        _ => Err(ParseError::UnexpectedElement(token.lexeme.clone())),
+    }
+}
+
+fn parse_grey_accent_on_list<'a, I>(
+    ast_before: AST,
+    tokens: &mut Peekable<I>,
+) -> Result<AST, ParseError>
+where
+    I: Iterator<Item = &'a TokenWithContext>,
+{
+    let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
+
+    match (ast_before, &current_element.token) {
+        (
+            new_ast::AST::Field(new_ast::Field::Plain(field_name, specified_type)),
+            Token::Graveaccent,
+        ) => {
+            let _ = tokens.next();
+            let res = parse_backtick_block(tokens)?;
+            let field = new_ast::Field::WithWithTags(field_name, specified_type, res);
+            Ok(new_ast::AST::Field(field))
+        }
+        (p, Token::NextLine) => {
+            let _ = tokens.next();
+            Ok(p)
+        }
+        _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
+    }
+}
+
+// TODO: Setup factory functions for the astTypes eg.. newFieldWithType() -> AST
