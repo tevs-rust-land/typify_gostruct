@@ -1,27 +1,33 @@
 use std::fmt::{self, Display};
 
 use crate::scanner::Position;
+#[derive(Debug)]
 pub struct StructDeclaration {
     pub name: String,
     pub body: Vec<AST>,
 }
+
+#[derive(Debug)]
 pub enum AST {
     Error(Error),
     Declaration(Box<StructDeclaration>),
     Field(Field),
 }
-
+#[derive(Debug)]
 pub struct FieldName(pub String);
+#[derive(Debug)]
 
 pub enum FieldType {
     One(DataType),
     List(DataType),
 }
+#[derive(Debug)]
 
 pub struct Tag {
     name: String,
     value: String,
 }
+#[derive(Debug)]
 pub enum Field {
     Plain(FieldName, FieldType),
     WithWithTags(FieldName, FieldType, Vec<AST>),
@@ -37,6 +43,7 @@ pub enum DataType {
     Embedded,
 }
 
+#[derive(Debug)]
 pub enum Error {
     ParseError(ParseError),
 }
@@ -62,6 +69,7 @@ impl Display for RequiredElements {
     }
 }
 
+#[derive(Debug)]
 pub enum ParseError {
     UnexpectedElement(String),
     UnknownElement(String),

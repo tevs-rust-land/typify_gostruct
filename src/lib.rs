@@ -1,5 +1,5 @@
-mod scanner;
-mod treewalk;
+pub mod scanner;
+pub mod treewalk;
 // use treewalk::interpreter;
 // fn transform(
 //     source: String,

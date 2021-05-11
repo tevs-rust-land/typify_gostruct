@@ -19,7 +19,6 @@ pub enum Token {
     Type,
     Struct,
     Binding,
-    Json,
     DataType(DataType),
 }
 
@@ -152,7 +151,6 @@ impl<'a> Scanner<'a> {
             "type" => Token::Type,
             "struct" => Token::Struct,
             "binding" => Token::Binding,
-            "json" => Token::Json,
             // data types
             "int64" => Token::DataType(DataType::Number),
             "float64" => Token::DataType(DataType::Number),

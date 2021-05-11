@@ -69,9 +69,7 @@ fn parse_declaration<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let element = tokens
-        .peek()
-        .ok_or_else(|| (ParseError::UnexpectedEndOfFile))?;
+    let element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
     match &element.token {
         Token::Type => {
             let _ = tokens.next();
@@ -82,6 +80,7 @@ where
             parse_identifier(key.to_string(), tokens)
         }
         _ => {
+            println!("Here");
             let parse_error = ParseError::UnknownElement(element.lexeme.clone());
             let error = new_ast::Error::ParseError(parse_error);
             let _ = tokens.next();
@@ -235,19 +234,22 @@ where
                     new_ast::AST::Field(new_ast::Field::Plain(field_name, specified_type)),
                     Token::Graveaccent,
                 ) => {
-                    let _ = tokens.peek();
+                    let _ = tokens.next();
                     let res = parse_backtick_block(tokens)?;
                     let field = new_ast::Field::WithWithTags(field_name, specified_type, res);
                     Ok(new_ast::AST::Field(field))
                 }
                 (p, Token::NextLine) => {
-                    let _ = tokens.peek();
+                    let _ = tokens.next();
                     Ok(p)
                 }
                 _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
             }
         }
-        (_, p) => Ok(p),
+        (_, p) => {
+            let _ = tokens.next();
+            Ok(p)
+        }
     };
     item
 }
@@ -267,6 +269,7 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
+
         // let statement = parse_declaration(tokens)?;
         // statements.push(statement)
     }
