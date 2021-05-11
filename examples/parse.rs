@@ -1,5 +1,4 @@
-use js_typify_gostruct;
-fn main() -> () {
+fn main() {
     let example = r#"
     type Region struct {
     Country string
