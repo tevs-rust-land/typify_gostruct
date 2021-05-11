@@ -1,4 +1,4 @@
-use crate::treewalk::new_ast::DataType;
+use crate::ast::DataType;
 use std::iter::Peekable;
 use std::str;
 

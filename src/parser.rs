@@ -1,8 +1,8 @@
+use crate::ast::{ParseError, RequiredElements, StructDeclaration, AST};
 use crate::scanner::{Token, TokenWithContext};
-use crate::treewalk::new_ast::{ParseError, RequiredElements, StructDeclaration, AST};
 use std::iter::Peekable;
 
-use super::new_ast::{self, FieldName};
+use super::ast::{self, FieldName};
 
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
@@ -82,7 +82,7 @@ where
         _ => {
             println!("Here");
             let parse_error = ParseError::UnknownElement(element.lexeme.clone());
-            let error = new_ast::Error::ParseError(parse_error);
+            let error = ast::Error::ParseError(parse_error);
             let _ = tokens.next();
             Ok(AST::Error(error))
         }
@@ -134,39 +134,38 @@ where
     let item = match &item.token {
         Token::DataType(specified_type) => {
             let _ = tokens.next();
-            let field_name = new_ast::FieldName(identifier);
-            let field_type = new_ast::FieldType::One(specified_type.clone());
-            let field = new_ast::Field::Plain(field_name, field_type);
+            let field_name = ast::FieldName(identifier);
+            let field_type = ast::FieldType::One(specified_type.clone());
+            let field = ast::Field::Plain(field_name, field_type);
             Ok(AST::Field(field))
         }
         Token::Identifier(literal) => {
             let _ = tokens.next();
 
-            let field_name = new_ast::FieldName(identifier);
-            let field_type =
-                new_ast::FieldType::One(new_ast::DataType::Custom(literal.to_string()));
-            let field = new_ast::Field::Plain(field_name, field_type);
+            let field_name = ast::FieldName(identifier);
+            let field_type = ast::FieldType::One(ast::DataType::Custom(literal.to_string()));
+            let field = ast::Field::Plain(field_name, field_type);
             Ok(AST::Field(field))
         }
         Token::NextLine => {
             let _ = tokens.next();
-            let field_name = new_ast::FieldName(identifier);
-            let field_type = new_ast::FieldType::One(new_ast::DataType::Embedded);
-            let field = new_ast::Field::Plain(field_name, field_type);
+            let field_name = ast::FieldName(identifier);
+            let field_type = ast::FieldType::One(ast::DataType::Embedded);
+            let field = ast::Field::Plain(field_name, field_type);
             Ok(AST::Field(field))
         }
         Token::Graveaccent => {
             let vec = Vec::new();
-            let field_name = new_ast::FieldName(identifier);
-            let field_type = new_ast::FieldType::One(new_ast::DataType::NotSpecified);
-            let field = new_ast::Field::WithWithTags(field_name, field_type, vec);
+            let field_name = ast::FieldName(identifier);
+            let field_type = ast::FieldType::One(ast::DataType::NotSpecified);
+            let field = ast::Field::WithWithTags(field_name, field_type, vec);
             Ok(AST::Field(field))
         }
         Token::LeftBracket => {
             let _ = tokens.next();
-            let field_name = new_ast::FieldName(identifier);
-            let field_type = new_ast::FieldType::List(new_ast::DataType::NotSpecified);
-            let field = new_ast::Field::Plain(field_name, field_type);
+            let field_name = ast::FieldName(identifier);
+            let field_type = ast::FieldType::List(ast::DataType::NotSpecified);
+            let field = ast::Field::Plain(field_name, field_type);
             Ok(AST::Field(field))
         }
         _token => Err(ParseError::UnknownElement(item.lexeme.to_string())),
@@ -189,22 +188,22 @@ where
     match (current_element.token.clone(), prev_item) {
         (
             Token::Graveaccent,
-            AST::Field(new_ast::Field::WithWithTags(field_name, field_type, ve)),
+            AST::Field(ast::Field::WithWithTags(field_name, field_type, _vec)),
         ) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens)?;
-            Ok(AST::Field(new_ast::Field::WithWithTags(
+            Ok(AST::Field(ast::Field::WithWithTags(
                 field_name, field_type, res,
             )))
         }
-        (Token::Graveaccent, AST::Field(new_ast::Field::Plain(field_name, field_type))) => {
+        (Token::Graveaccent, AST::Field(ast::Field::Plain(field_name, field_type))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens)?;
-            Ok(AST::Field(new_ast::Field::WithWithTags(
+            Ok(AST::Field(ast::Field::WithWithTags(
                 field_name, field_type, res,
             )))
         }
-        (Token::RightBracket, AST::Field(new_ast::Field::Plain(field_name, _field_type))) => {
+        (Token::RightBracket, AST::Field(ast::Field::Plain(field_name, _field_type))) => {
             let field_list_type = parse_field_with_list_type(field_name, tokens)?;
             parse_grey_accent_tokens_on_list_type(field_list_type, tokens)
         }
@@ -253,20 +252,13 @@ where
     match &token.token {
         Token::DataType(specified_type) => {
             let _ = tokens.next();
-            let specified_type = new_ast::FieldType::List(specified_type.clone());
-            Ok(AST::Field(new_ast::Field::Plain(
-                field_name,
-                specified_type,
-            )))
+            let specified_type = ast::FieldType::List(specified_type.clone());
+            Ok(AST::Field(ast::Field::Plain(field_name, specified_type)))
         }
         Token::Identifier(custom_type) => {
             let _ = tokens.next();
-            let specified_type =
-                new_ast::FieldType::One(new_ast::DataType::Custom(custom_type.clone()));
-            Ok(AST::Field(new_ast::Field::Plain(
-                field_name,
-                specified_type,
-            )))
+            let specified_type = ast::FieldType::One(ast::DataType::Custom(custom_type.clone()));
+            Ok(AST::Field(ast::Field::Plain(field_name, specified_type)))
         }
         _ => Err(ParseError::UnexpectedElement(token.lexeme.clone())),
     }
@@ -282,14 +274,11 @@ where
     let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
 
     match (ast_before, &current_element.token) {
-        (
-            new_ast::AST::Field(new_ast::Field::Plain(field_name, specified_type)),
-            Token::Graveaccent,
-        ) => {
+        (ast::AST::Field(ast::Field::Plain(field_name, specified_type)), Token::Graveaccent) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens)?;
-            let field = new_ast::Field::WithWithTags(field_name, specified_type, res);
-            Ok(new_ast::AST::Field(field))
+            let field = ast::Field::WithWithTags(field_name, specified_type, res);
+            Ok(ast::AST::Field(field))
         }
         (p, Token::NextLine) => {
             let _ = tokens.next();

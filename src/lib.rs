@@ -1,5 +1,6 @@
+pub mod ast;
+pub mod parser;
 pub mod scanner;
-pub mod treewalk;
 // use treewalk::interpreter;
 // fn transform(
 //     source: String,
