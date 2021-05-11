@@ -158,7 +158,7 @@ where
             let vec = Vec::new();
             let field_name = ast::FieldName(identifier);
             let field_type = ast::FieldType::One(ast::DataType::NotSpecified);
-            let field = ast::Field::WithWithTags(field_name, field_type, vec);
+            let field = ast::Field::WithTags(field_name, field_type, vec);
             Ok(AST::Field(field))
         }
         Token::LeftBracket => {
@@ -186,20 +186,10 @@ where
     let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
 
     match (current_element.token.clone(), prev_item) {
-        (
-            Token::Graveaccent,
-            AST::Field(ast::Field::WithWithTags(field_name, field_type, _vec)),
-        ) => {
-            let _ = tokens.next();
-            let res = parse_backtick_block(tokens)?;
-            Ok(AST::Field(ast::Field::WithWithTags(
-                field_name, field_type, res,
-            )))
-        }
         (Token::Graveaccent, AST::Field(ast::Field::Plain(field_name, field_type))) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens)?;
-            Ok(AST::Field(ast::Field::WithWithTags(
+            Ok(AST::Field(ast::Field::WithTags(
                 field_name, field_type, res,
             )))
         }
@@ -229,7 +219,7 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
-
+        // TODO: Finish this implementation..
         // let statement = parse_declaration(tokens)?;
         // statements.push(statement)
     }
@@ -277,7 +267,7 @@ where
         (ast::AST::Field(ast::Field::Plain(field_name, specified_type)), Token::Graveaccent) => {
             let _ = tokens.next();
             let res = parse_backtick_block(tokens)?;
-            let field = ast::Field::WithWithTags(field_name, specified_type, res);
+            let field = ast::Field::WithTags(field_name, specified_type, res);
             Ok(ast::AST::Field(field))
         }
         (p, Token::NextLine) => {

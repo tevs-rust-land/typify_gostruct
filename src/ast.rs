@@ -30,7 +30,7 @@ pub struct Tag {
 #[derive(Debug)]
 pub enum Field {
     Plain(FieldName, FieldType),
-    WithWithTags(FieldName, FieldType, Vec<AST>),
+    WithTags(FieldName, FieldType, Vec<AST>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
