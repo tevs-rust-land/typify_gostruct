@@ -1,3 +1,4 @@
+use crate::scanner::Position;
 pub struct StructDeclaration {
     pub name: String,
     pub body: Vec<AST>,
@@ -11,10 +12,10 @@ pub enum AST {
 pub struct FieldName(String);
 
 pub enum FieldType {
-    One,
-    List,
+    One(DataType),
+    List(DataType),
 }
-pub struct Field(FieldName, FieldType, DataType);
+pub struct Field(FieldName, FieldType);
 
 pub enum DataType {
     Number,
@@ -25,7 +26,7 @@ pub enum DataType {
 }
 
 pub enum Error {
-    ParseErrors(ParseErrors),
+    ParseError(ParseError),
 }
 
 #[derive(Debug)]
@@ -36,7 +37,8 @@ pub enum RequiredElements {
     Identifier,
     Colon,
 }
-pub enum ParseErrors {
+pub enum ParseError {
+    UnknownElement(String),
     UnexpectedEndOfFile,
-    Missing(RequiredElements),
+    Missing(RequiredElements, String, Position),
 }
