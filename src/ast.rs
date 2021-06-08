@@ -47,7 +47,6 @@ pub enum DataType {
     String,
     Boolean,
     Custom(String),
-    NotSpecified,
     Embedded,
 }
 

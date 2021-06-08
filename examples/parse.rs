@@ -1,3 +1,5 @@
+use js_typify_gostruct::interpreters::{select_interpreter, Interpreter};
+
 fn main() -> Result<(), Vec<String>> {
     let example = r#"
     type Region struct {
@@ -8,7 +10,9 @@ fn main() -> Result<(), Vec<String>> {
     "#;
     let tokens = js_typify_gostruct::scanner::scan(example)?;
     let parsed_result = js_typify_gostruct::parser::parse(&tokens)?;
-    println!("{:?}", parsed_result);
+    let interpreter = select_interpreter("flow");
 
+    let result = interpreter.interpret(parsed_result);
+    println!("{}", result);
     Ok(())
 }
