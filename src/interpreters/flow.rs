@@ -1,36 +1,52 @@
-use crate::ast::{DataType, Field, FieldType, TagKey, AST};
+use crate::ast::{DataType, Field, FieldType, StructDeclaration, TagKey, AST};
 
-use super::{FieldTypeResult, Interpreter};
+use super::Interpreter;
 
 pub struct FlowInterpreter();
 
+static OPENING_BRACKET: char = '{';
+
+static CLOSING_BRACKET: char = '}';
+
 impl Interpreter for FlowInterpreter {
     fn interpret(&self, ast: Vec<crate::ast::AST>) -> String {
-        let mut result = String::new();
+        let mut result = "// @flow\n".to_string();
         for item in ast {
             let struct_results = match item {
-                AST::Declaration(declaration) => self.interpret_struct(declaration),
-                AST::Error(_) => todo!(),
-                AST::Field(_) => todo!(),
+                AST::Declaration(declaration) => self.interpret_struct(*declaration),
+                _ => unreachable!(),
             };
             result.push_str(&struct_results)
         }
         result
     }
+}
 
-    fn interpret_struct(&self, declaration: Box<crate::ast::StructDeclaration>) -> String {
+impl FlowInterpreter {
+    pub fn new() -> Self {
+        Self {}
+    }
+    fn get_field_type(&self, data_type: DataType) -> super::FieldType {
+        match data_type {
+            DataType::Number => super::FieldType::Normal("number".to_string()),
+            DataType::String => super::FieldType::Normal("string".to_string()),
+            DataType::Boolean => super::FieldType::Normal("boolean".to_string()),
+            DataType::Custom(custom) => super::FieldType::Normal(custom),
+            DataType::Embedded => super::FieldType::Embedded,
+        }
+    }
+    fn interpret_struct(&self, declaration: StructDeclaration) -> String {
         let mut result = format!("type {} = ", declaration.name);
-        result.push('{');
+        result.push(OPENING_BRACKET);
 
         for item in declaration.body {
             let field_result = match item {
                 AST::Field(field) => self.interpret_field(field),
-                AST::Error(_) => todo!(),
-                AST::Declaration(_) => todo!(),
+                _ => unreachable!(),
             };
             result.push_str(&field_result)
         }
-        result.push('}');
+        result.push(CLOSING_BRACKET);
         result
     }
 
@@ -41,10 +57,10 @@ impl Interpreter for FlowInterpreter {
             Field::Plain(field_name, field_type) => {
                 let field_type = self.convert_field_type(field_type);
                 match field_type {
-                    FieldTypeResult::Normal(field_type) => {
+                    super::FieldType::Normal(field_type) => {
                         format!("{} : {},", field_name.0, field_type)
                     }
-                    FieldTypeResult::Embedded => format!("...{}", field_name.0),
+                    super::FieldType::Embedded => format!("...{}", field_name.0),
                 }
             }
             Field::WithTags(field_name, field_type, field_tags) => {
@@ -56,7 +72,7 @@ impl Interpreter for FlowInterpreter {
         result
     }
 
-    fn convert_field_type(&self, field_type: FieldType) -> FieldTypeResult {
+    fn convert_field_type(&self, field_type: FieldType) -> super::FieldType {
         let single_of_list = match field_type {
             FieldType::List(_) => "[]",
             FieldType::One(_) => "",
@@ -67,10 +83,10 @@ impl Interpreter for FlowInterpreter {
         };
 
         match field_type {
-            FieldTypeResult::Normal(specified_type) => {
-                FieldTypeResult::Normal(format!("{}{}", single_of_list, specified_type))
+            super::FieldType::Normal(specified_type) => {
+                super::FieldType::Normal(format!("{}{}", single_of_list, specified_type))
             }
-            FieldTypeResult::Embedded => FieldTypeResult::Embedded,
+            super::FieldType::Embedded => super::FieldType::Embedded,
         }
     }
 
@@ -89,23 +105,8 @@ impl Interpreter for FlowInterpreter {
             }
         }
         match field_type {
-            FieldTypeResult::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
+            super::FieldType::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
             _ => unreachable!(),
-        }
-    }
-}
-
-impl FlowInterpreter {
-    pub fn new() -> Self {
-        Self {}
-    }
-    fn get_field_type(&self, data_type: DataType) -> FieldTypeResult {
-        match data_type {
-            DataType::Number => FieldTypeResult::Normal("number".to_string()),
-            DataType::String => FieldTypeResult::Normal("string".to_string()),
-            DataType::Boolean => FieldTypeResult::Normal("boolean".to_string()),
-            DataType::Custom(custom) => FieldTypeResult::Normal(custom),
-            DataType::Embedded => FieldTypeResult::Embedded,
         }
     }
 }
