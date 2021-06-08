@@ -1,7 +1,7 @@
 fn main() -> Result<(), Vec<String>> {
     let example = r#"
     type Region struct {
-    Country string `json:"country"`
+    Country string `json:"country" binding:"required"`
     State string 
     }
     "#;

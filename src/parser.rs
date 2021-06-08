@@ -190,13 +190,16 @@ where
         Token::DataType(specified_type) => {
             let _ = tokens.next();
             let field_type = ast::FieldType::One(specified_type.clone());
-            Ok((field_type, HashMap::new()))
+            let field_tags = parse_field_tags_if_present(tokens)?;
+            Ok((field_type, field_tags))
         }
         Token::Identifier(literal) => {
             let _ = tokens.next();
 
             let field_type = ast::FieldType::One(ast::DataType::Custom(literal.to_string()));
-            Ok((field_type, HashMap::new()))
+            let field_tags = parse_field_tags_if_present(tokens)?;
+
+            Ok((field_type, field_tags))
         }
         Token::NextLine => {
             let _ = tokens.next();
@@ -212,8 +215,8 @@ where
         Token::LeftBracket => {
             let _ = tokens.next();
             let field_type = parse_type_of_list_with_field(tokens)?;
-            let struct_tags = parse_json_tags_on_list_field_type(tokens)?;
-            Ok((field_type, struct_tags))
+            let field_tags = parse_field_tags_if_present(tokens)?;
+            Ok((field_type, field_tags))
         }
         _token => Err(ParseError::UnknownElement(item.lexeme.to_string())),
     }
@@ -272,7 +275,7 @@ where
     }
 }
 
-fn parse_json_tags_on_list_field_type<'a, I>(
+fn parse_field_tags_if_present<'a, I>(
     tokens: &mut Peekable<I>,
 ) -> Result<HashMap<TagKey, TagValue>, ParseError>
 where
