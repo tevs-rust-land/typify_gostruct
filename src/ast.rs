@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{self, Display};
 
 use crate::scanner::Position;
@@ -29,9 +30,16 @@ pub struct Tag {
 }
 #[derive(Debug)]
 pub enum Field {
+    Blank,
     Plain(FieldName, FieldType),
-    WithTags(FieldName, FieldType, Vec<AST>),
+    WithTags(FieldName, FieldType, HashMap<TagKey, TagValue>),
 }
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct TagKey(pub String);
+
+#[derive(Debug)]
+pub struct TagValue(pub String);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum DataType {

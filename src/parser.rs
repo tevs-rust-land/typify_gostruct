@@ -1,5 +1,6 @@
-use crate::ast::{ParseError, RequiredElements, StructDeclaration, AST};
+use crate::ast::{ParseError, RequiredElements, StructDeclaration, TagKey, TagValue, AST};
 use crate::scanner::{Token, TokenWithContext};
+use std::collections::HashMap;
 use std::iter::Peekable;
 
 use super::ast::{self, FieldType};
@@ -39,6 +40,18 @@ where
         &Token::Identifier(ref identifier),
         identifier.to_string(),
         RequiredElements::Identifier
+    )
+}
+
+fn consume_expected_string_literal<'a, I>(tokens: &mut Peekable<I>) -> Result<String, ParseError>
+where
+    I: Iterator<Item = &'a TokenWithContext>,
+{
+    consume_expected_token_with_action!(
+        tokens,
+        &Token::StringLiteral(ref literal),
+        literal.to_string(),
+        RequiredElements::StringLiteral
     )
 }
 
@@ -121,8 +134,13 @@ where
         let statement = parse_struct_fields(tokens)?;
         statements.push(statement)
     }
-    let _ = tokens.next();
-    Ok(statements)
+
+    if is_block_end(tokens.peek()) {
+        let _ = tokens.next();
+        Ok(statements)
+    } else {
+        Err(ParseError::UnexpectedEndOfFile)
+    }
 }
 
 fn parse_struct_fields<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
@@ -130,9 +148,11 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
+
     match &element.token {
         Token::Identifier(identifier) => {
             let _ = tokens.next();
+            println!("{}", identifier);
             let (field_type, field_tags) = parse_field_type_with_tags(tokens)?;
             let field_name = ast::FieldName(identifier.to_string());
 
@@ -149,6 +169,7 @@ where
             let _ = tokens.next();
             parse_struct_fields(tokens)
         }
+        Token::RightBrace => Ok(AST::Field(ast::Field::Blank)),
         _ => {
             let parse_error = ParseError::UnknownElement(element.lexeme.clone());
             let error = ast::Error::ParseError(parse_error);
@@ -160,7 +181,7 @@ where
 
 fn parse_field_type_with_tags<'a, I>(
     tokens: &mut Peekable<I>,
-) -> Result<(FieldType, Vec<AST>), ParseError>
+) -> Result<(FieldType, HashMap<TagKey, TagValue>), ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -169,18 +190,18 @@ where
         Token::DataType(specified_type) => {
             let _ = tokens.next();
             let field_type = ast::FieldType::One(specified_type.clone());
-            Ok((field_type, Vec::new()))
+            Ok((field_type, HashMap::new()))
         }
         Token::Identifier(literal) => {
             let _ = tokens.next();
 
             let field_type = ast::FieldType::One(ast::DataType::Custom(literal.to_string()));
-            Ok((field_type, Vec::new()))
+            Ok((field_type, HashMap::new()))
         }
         Token::NextLine => {
             let _ = tokens.next();
             let field_type = ast::FieldType::One(ast::DataType::Embedded);
-            Ok((field_type, Vec::new()))
+            Ok((field_type, HashMap::new()))
         }
         Token::Graveaccent => {
             let _ = tokens.next();
@@ -194,16 +215,18 @@ where
             let struct_tags = parse_json_tags_on_list_field_type(tokens)?;
             Ok((field_type, struct_tags))
         }
-
         _token => Err(ParseError::UnknownElement(item.lexeme.to_string())),
     }
 }
 
-fn parse_field_tags<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
+fn parse_field_tags<'a, I>(
+    tokens: &mut Peekable<I>,
+) -> Result<HashMap<TagKey, TagValue>, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let mut statements = Vec::new();
+    let mut json_tags = HashMap::new();
+
     fn is_block_end(t: Option<&&TokenWithContext>) -> bool {
         matches!(
             t,
@@ -214,13 +237,16 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
-        // TODO: Finish this implementation.. We should have a method that parses the content of field tags, eg.. parse_tags
-        let statement = parse_declaration(tokens)?;
-        statements.push(statement)
+        let identifier = consume_expected_identifier(tokens)?;
+        let identifier = TagKey(identifier);
+        consume_expected_token!(tokens, &Token::Colon, RequiredElements::Colon)?;
+        let tag_value = consume_expected_string_literal(tokens)?;
+        let tag_value = TagValue(tag_value);
+        json_tags.insert(identifier, tag_value);
     }
     if is_block_end(tokens.peek()) {
         let _ = tokens.next();
-        Ok(statements)
+        Ok(json_tags)
     } else {
         Err(ParseError::UnexpectedEndOfFile)
     }
@@ -248,7 +274,7 @@ where
 
 fn parse_json_tags_on_list_field_type<'a, I>(
     tokens: &mut Peekable<I>,
-) -> Result<Vec<AST>, ParseError>
+) -> Result<HashMap<TagKey, TagValue>, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -262,7 +288,7 @@ where
         }
         Token::NextLine => {
             let _ = tokens.next();
-            Ok(Vec::new())
+            Ok(HashMap::new())
         }
         _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
     }
