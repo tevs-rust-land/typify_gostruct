@@ -1,23 +1,34 @@
+use interpreters::{select_interpreter, TargetIntepreter};
+
 pub mod ast;
 pub mod interpreters;
 pub mod parser;
 pub mod scanner;
-// use treewalk::interpreter;
-// fn transform(
-//     source: String,
-//     transform_to: interpreter::TransformTo,
-// ) -> Result<String, Vec<String>> {
-//     let (tokens, _scanner_errors) = scanner::scan(&source);
-//     match parser::parse(&tokens) {
-//         Ok(expr) => Ok(interpreter::interpret(&expr, transform_to)),
-//         Err(err) => Err(err),
-//     }
-// }
 
-// pub fn transform_to_flow(source: String) -> Result<String, Vec<String>> {
-//     transform(source, interpreter::TransformTo::Flow)
-// }
+pub trait Source {
+    fn to(&self) -> &str;
+}
 
-// pub fn transform_to_typescript(source: String) -> Result<String, Vec<String>> {
-//     transform(source, interpreter::TransformTo::Typescript)
-// }
+impl Source for &str {
+    fn to(&self) -> &str {
+        self
+    }
+}
+
+impl Source for String {
+    fn to(&self) -> &str {
+        self.as_str()
+    }
+}
+
+pub fn transform<S, T>(source: S, target: T) -> Result<String, Vec<String>>
+where
+    S: Source,
+    T: TargetIntepreter,
+{
+    let source = source.to();
+    let tokens = scanner::scan(source)?;
+    let parsed_result = parser::parse(&tokens)?;
+    let interpreter = select_interpreter(target);
+    Ok(interpreter.interpret(parsed_result))
+}

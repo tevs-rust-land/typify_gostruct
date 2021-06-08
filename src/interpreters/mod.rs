@@ -1,8 +1,9 @@
 use crate::ast::AST;
 
-use self::flow::FlowInterpreter;
+use self::{flow::FlowInterpreter, typescript::TypeScriptInterpreter};
 
 mod flow;
+mod typescript;
 
 pub enum FieldType {
     Normal(String),
@@ -12,37 +13,32 @@ pub trait Interpreter {
     fn interpret(&self, ast: Vec<AST>) -> String;
 }
 
-pub enum InterpreterImplementation {
-    Flow,
+pub trait TargetIntepreter {
+    fn get_implementation(&self) -> Box<dyn Interpreter>;
 }
 
-pub trait IntepreterName {
-    fn to_interpreter_name(&self) -> InterpreterImplementation;
-}
-
-impl IntepreterName for &str {
-    fn to_interpreter_name(&self) -> InterpreterImplementation {
+impl TargetIntepreter for &str {
+    fn get_implementation(&self) -> Box<dyn Interpreter> {
         let name = self.to_ascii_lowercase();
         match name.as_ref() {
-            "flow" => InterpreterImplementation::Flow,
+            "flow" => Box::new(FlowInterpreter::new()),
+            "typescript" => Box::new(TypeScriptInterpreter::new()),
             _ => unimplemented!(),
         }
     }
 }
 
-impl IntepreterName for String {
-    fn to_interpreter_name(&self) -> InterpreterImplementation {
+impl TargetIntepreter for String {
+    fn get_implementation(&self) -> Box<dyn Interpreter> {
         let new_clone = self.to_ascii_lowercase();
         match new_clone.as_ref() {
-            "flow" => InterpreterImplementation::Flow,
+            "flow" => Box::new(FlowInterpreter::new()),
+            "typescript" => Box::new(TypeScriptInterpreter::new()),
             _ => unimplemented!(),
         }
     }
 }
 
-pub fn select_interpreter(interpreter: impl IntepreterName) -> impl Interpreter {
-    let interpreter = interpreter.to_interpreter_name();
-    match interpreter {
-        InterpreterImplementation::Flow => FlowInterpreter::new(),
-    }
+pub fn select_interpreter(interpreter: impl TargetIntepreter) -> Box<dyn Interpreter> {
+    interpreter.get_implementation()
 }

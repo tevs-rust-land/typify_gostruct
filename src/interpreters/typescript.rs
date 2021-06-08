@@ -2,15 +2,15 @@ use crate::ast::{DataType, Field, FieldType, StructDeclaration, TagKey, AST};
 
 use super::Interpreter;
 
-pub struct FlowInterpreter();
+pub struct TypeScriptInterpreter();
 
 static OPENING_BRACKET: char = '{';
 
 static CLOSING_BRACKET: char = '}';
 
-impl Interpreter for FlowInterpreter {
+impl Interpreter for TypeScriptInterpreter {
     fn interpret(&self, ast: Vec<crate::ast::AST>) -> String {
-        let mut result = "// @flow\n".to_string();
+        let mut result = String::new();
         for item in ast {
             let struct_results = match item {
                 AST::Declaration(declaration) => self.interpret_struct(*declaration),
@@ -22,7 +22,7 @@ impl Interpreter for FlowInterpreter {
     }
 }
 
-impl FlowInterpreter {
+impl TypeScriptInterpreter {
     pub fn new() -> Self {
         Self {}
     }
@@ -36,7 +36,7 @@ impl FlowInterpreter {
         }
     }
     fn interpret_struct(&self, declaration: StructDeclaration) -> String {
-        let mut result = format!("export type {} = ", declaration.name);
+        let mut result = format!("export interface {} = ", declaration.name);
         result.push(OPENING_BRACKET);
 
         for item in declaration.body {
