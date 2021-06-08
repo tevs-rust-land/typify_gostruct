@@ -1,4 +1,4 @@
-use crate::ast::{ParseError, RequiredElements, StructDeclaration, TagKey, TagValue, AST};
+use crate::ast::{Field, ParseError, RequiredElements, StructDeclaration, TagKey, TagValue, AST};
 use crate::scanner::{Token, TokenWithContext};
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -92,12 +92,7 @@ where
             let _ = tokens.next();
             parse_declaration(tokens)
         }
-        _ => {
-            let parse_error = ParseError::UnknownElement(element.lexeme.clone());
-            let error = ast::Error::ParseError(parse_error);
-            let _ = tokens.next();
-            Ok(AST::Error(error))
-        }
+        _ => Err(ParseError::UnknownElement(element.lexeme.clone())),
     }
 }
 
@@ -116,7 +111,7 @@ where
     Ok(AST::Declaration(Box::new(declaration)))
 }
 
-fn parse_struct_body<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
+fn parse_struct_body<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<Field>, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -143,7 +138,7 @@ where
     }
 }
 
-fn parse_struct_fields<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
+fn parse_struct_fields<'a, I>(tokens: &mut Peekable<I>) -> Result<Field, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -157,24 +152,17 @@ where
 
             if field_tags.is_empty() {
                 let field = ast::Field::Plain(field_name, field_type);
-                Ok(AST::Field(field))
+                Ok(field)
             } else {
-                Ok(AST::Field(ast::Field::WithTags(
-                    field_name, field_type, field_tags,
-                )))
+                Ok(ast::Field::WithTags(field_name, field_type, field_tags))
             }
         }
         Token::NextLine => {
             let _ = tokens.next();
             parse_struct_fields(tokens)
         }
-        Token::RightBrace => Ok(AST::Field(ast::Field::Blank)),
-        _ => {
-            let parse_error = ParseError::UnknownElement(element.lexeme.clone());
-            let error = ast::Error::ParseError(parse_error);
-            let _ = tokens.next();
-            Ok(AST::Error(error))
-        }
+        Token::RightBrace => Ok(ast::Field::Blank),
+        _ => Err(ParseError::UnknownElement(element.lexeme.clone())),
     }
 }
 
@@ -295,5 +283,3 @@ where
         _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
     }
 }
-
-// TODO: Setup factory functions for the astTypes eg.. newFieldWithType() -> AST

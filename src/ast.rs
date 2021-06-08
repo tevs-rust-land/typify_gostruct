@@ -5,12 +5,11 @@ use crate::scanner::Position;
 #[derive(Debug)]
 pub struct StructDeclaration {
     pub name: String,
-    pub body: Vec<AST>, // TODO: Convert this to vec<Field>
+    pub body: Vec<Field>,
 }
 
 #[derive(Debug)]
 pub enum AST {
-    Error(Error),
     Declaration(Box<StructDeclaration>),
     Field(Field),
 }
@@ -48,11 +47,6 @@ pub enum DataType {
     Boolean,
     Custom(String),
     Embedded,
-}
-
-#[derive(Debug)]
-pub enum Error {
-    ParseError(ParseError),
 }
 
 #[derive(Debug)]

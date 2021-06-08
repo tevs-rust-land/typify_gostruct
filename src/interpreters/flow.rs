@@ -40,10 +40,7 @@ impl FlowInterpreter {
         result.push(OPENING_BRACKET);
 
         for item in declaration.body {
-            let field_result = match item {
-                AST::Field(field) => self.interpret_field(field),
-                _ => unreachable!(),
-            };
+            let field_result = self.interpret_field(item);
             result.push_str(&field_result)
         }
         result.push(CLOSING_BRACKET);
