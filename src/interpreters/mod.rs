@@ -6,6 +6,7 @@ use self::flow::FlowInterpreter;
 
 mod flow;
 
+// TODO: Give this a better name
 pub enum FieldTypeResult {
     Normal(String),
     Embedded,
@@ -14,13 +15,13 @@ pub trait Interpreter {
     fn interpret(&self, ast: Vec<AST>) -> String;
     fn interpret_struct(&self, declaration: Box<StructDeclaration>) -> String;
     fn interpret_field(&self, field: Field) -> String;
-    fn convert_convert_field_type(&self, field_type: FieldType) -> FieldTypeResult;
     fn interpret_field_with_tags(
         &self,
         field_name: FieldName,
         field_type: FieldType,
         tags: HashMap<TagKey, TagValue>,
     ) -> String;
+    fn convert_field_type(&self, field_type: FieldType) -> FieldTypeResult;
 }
 
 pub enum InterpreterImplementation {

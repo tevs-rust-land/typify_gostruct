@@ -39,7 +39,7 @@ impl Interpreter for FlowInterpreter {
         let field_result = match field {
             Field::Blank => String::new(),
             Field::Plain(field_name, field_type) => {
-                let field_type = self.convert_convert_field_type(field_type);
+                let field_type = self.convert_field_type(field_type);
                 match field_type {
                     FieldTypeResult::Normal(field_type) => {
                         format!("{} : {},", field_name.0, field_type)
@@ -56,7 +56,7 @@ impl Interpreter for FlowInterpreter {
         result
     }
 
-    fn convert_convert_field_type(&self, field_type: FieldType) -> FieldTypeResult {
+    fn convert_field_type(&self, field_type: FieldType) -> FieldTypeResult {
         let single_of_list = match field_type {
             FieldType::List(_) => "[]",
             FieldType::One(_) => "",
@@ -81,7 +81,7 @@ impl Interpreter for FlowInterpreter {
         tags: std::collections::HashMap<crate::ast::TagKey, crate::ast::TagValue>,
     ) -> String {
         let mut field_name = field_name.0;
-        let field_type = self.convert_convert_field_type(field_type);
+        let field_type = self.convert_field_type(field_type);
 
         for (key, value) in &tags {
             if *key == TagKey("json".to_string()) {
