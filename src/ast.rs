@@ -81,12 +81,14 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::UnexpectedEndOfFile => write!(f, "Unexpected End Of file"),
-            ParseError::UnknownElement(element) => write!(f, "Unknown element {}.", element),
-            ParseError::UnexpectedElement(element) => write!(f, "Unexpected element {}.", element),
+            ParseError::UnknownElement(element) => write!(f, "Unknown element `{}`", element),
+            ParseError::UnexpectedElement(element) => {
+                write!(f, "Unexpected element `{}`", element)
+            }
             ParseError::Missing(token, lexeme, Position { line, column, .. }) => {
                 write!(
                     f,
-                    "Expected {} but found `{}` at line {} column {}",
+                    "Expected `{}` but found `{}` at line {} column {} ",
                     token, lexeme, line, column
                 )
             }

@@ -2,7 +2,7 @@ use crate::ast::{ParseError, RequiredElements, StructDeclaration, AST};
 use crate::scanner::{Token, TokenWithContext};
 use std::iter::Peekable;
 
-use super::ast::{self, FieldName};
+use super::ast::{self, FieldType};
 
 macro_rules! consume_expected_token_with_action {
     ($tokens:expr, $expected:pat, $transform_token:expr, $required_element:expr) => {
@@ -75,12 +75,11 @@ where
             let _ = tokens.next();
             parse_struct_declaration(tokens)
         }
-        Token::Identifier(key) => {
+        Token::NextLine => {
             let _ = tokens.next();
-            parse_identifier(key.to_string(), tokens)
+            parse_declaration(tokens)
         }
         _ => {
-            println!("Here");
             let parse_error = ParseError::UnknownElement(element.lexeme.clone());
             let error = ast::Error::ParseError(parse_error);
             let _ = tokens.next();
@@ -96,7 +95,7 @@ where
     let identifier = consume_expected_identifier(tokens)?;
     consume_expected_token!(tokens, &Token::Struct, RequiredElements::Struct)?;
     consume_expected_token!(tokens, &Token::LeftBrace, RequiredElements::LeftBrace)?;
-    let block = parse_block(tokens)?;
+    let block = parse_struct_body(tokens)?;
     let declaration = StructDeclaration {
         name: identifier,
         body: block,
@@ -104,7 +103,7 @@ where
     Ok(AST::Declaration(Box::new(declaration)))
 }
 
-fn parse_block<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
+fn parse_struct_body<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -119,96 +118,92 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
-        let statement = parse_declaration(tokens)?;
+        let statement = parse_struct_fields(tokens)?;
         statements.push(statement)
     }
     let _ = tokens.next();
     Ok(statements)
 }
 
-fn parse_identifier<'a, I>(identifier: String, tokens: &mut Peekable<I>) -> Result<AST, ParseError>
+fn parse_struct_fields<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let item = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
-    let item = match &item.token {
-        Token::DataType(specified_type) => {
+    let element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
+    match &element.token {
+        Token::Identifier(identifier) => {
             let _ = tokens.next();
-            let field_name = ast::FieldName(identifier);
-            let field_type = ast::FieldType::One(specified_type.clone());
-            let field = ast::Field::Plain(field_name, field_type);
-            Ok(AST::Field(field))
-        }
-        Token::Identifier(literal) => {
-            let _ = tokens.next();
+            let (field_type, field_tags) = parse_field_type_with_tags(tokens)?;
+            let field_name = ast::FieldName(identifier.to_string());
 
-            let field_name = ast::FieldName(identifier);
-            let field_type = ast::FieldType::One(ast::DataType::Custom(literal.to_string()));
-            let field = ast::Field::Plain(field_name, field_type);
-            Ok(AST::Field(field))
+            if field_tags.is_empty() {
+                let field = ast::Field::Plain(field_name, field_type);
+                Ok(AST::Field(field))
+            } else {
+                Ok(AST::Field(ast::Field::WithTags(
+                    field_name, field_type, field_tags,
+                )))
+            }
         }
         Token::NextLine => {
             let _ = tokens.next();
-            let field_name = ast::FieldName(identifier);
-            let field_type = ast::FieldType::One(ast::DataType::Embedded);
-            let field = ast::Field::Plain(field_name, field_type);
-            Ok(AST::Field(field))
+            parse_struct_fields(tokens)
         }
-        Token::Graveaccent => {
-            let vec = Vec::new();
-            let field_name = ast::FieldName(identifier);
-            let field_type = ast::FieldType::One(ast::DataType::NotSpecified);
-            let field = ast::Field::WithTags(field_name, field_type, vec);
-            Ok(AST::Field(field))
-        }
-        Token::LeftBracket => {
+        _ => {
+            let parse_error = ParseError::UnknownElement(element.lexeme.clone());
+            let error = ast::Error::ParseError(parse_error);
             let _ = tokens.next();
-            let field_name = ast::FieldName(identifier);
-            let field_type = ast::FieldType::List(ast::DataType::NotSpecified);
-            let field = ast::Field::Plain(field_name, field_type);
-            Ok(AST::Field(field))
-        }
-        _token => Err(ParseError::UnknownElement(item.lexeme.to_string())),
-    };
-
-    let item = item?;
-
-    parse_identifier_to_backticks(item, tokens)
-}
-
-fn parse_identifier_to_backticks<'a, I>(
-    prev_item: AST,
-    tokens: &mut Peekable<I>,
-) -> Result<AST, ParseError>
-where
-    I: Iterator<Item = &'a TokenWithContext>,
-{
-    let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
-
-    match (current_element.token.clone(), prev_item) {
-        (Token::Graveaccent, AST::Field(ast::Field::Plain(field_name, field_type))) => {
-            let _ = tokens.next();
-            let res = parse_backtick_block(tokens)?;
-            Ok(AST::Field(ast::Field::WithTags(
-                field_name, field_type, res,
-            )))
-        }
-        (Token::RightBracket, AST::Field(ast::Field::Plain(field_name, _field_type))) => {
-            let field_list_type = parse_field_with_list_type(field_name, tokens)?;
-            parse_grey_accent_tokens_on_list_type(field_list_type, tokens)
-        }
-        (_, p) => {
-            let _ = tokens.next();
-            Ok(p)
+            Ok(AST::Error(error))
         }
     }
 }
 
-fn parse_backtick_block<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
+fn parse_field_type_with_tags<'a, I>(
+    tokens: &mut Peekable<I>,
+) -> Result<(FieldType, Vec<AST>), ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let statements = Vec::new();
+    let item = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
+    match &item.token {
+        Token::DataType(specified_type) => {
+            let _ = tokens.next();
+            let field_type = ast::FieldType::One(specified_type.clone());
+            Ok((field_type, Vec::new()))
+        }
+        Token::Identifier(literal) => {
+            let _ = tokens.next();
+
+            let field_type = ast::FieldType::One(ast::DataType::Custom(literal.to_string()));
+            Ok((field_type, Vec::new()))
+        }
+        Token::NextLine => {
+            let _ = tokens.next();
+            let field_type = ast::FieldType::One(ast::DataType::Embedded);
+            Ok((field_type, Vec::new()))
+        }
+        Token::Graveaccent => {
+            let _ = tokens.next();
+            let field_type = ast::FieldType::One(ast::DataType::Embedded);
+            let res = parse_field_tags(tokens)?;
+            Ok((field_type, res))
+        }
+        Token::LeftBracket => {
+            let _ = tokens.next();
+            let field_type = parse_type_of_list_with_field(tokens)?;
+            let struct_tags = parse_json_tags_on_list_field_type(tokens)?;
+            Ok((field_type, struct_tags))
+        }
+
+        _token => Err(ParseError::UnknownElement(item.lexeme.to_string())),
+    }
+}
+
+fn parse_field_tags<'a, I>(tokens: &mut Peekable<I>) -> Result<Vec<AST>, ParseError>
+where
+    I: Iterator<Item = &'a TokenWithContext>,
+{
+    let mut statements = Vec::new();
     fn is_block_end(t: Option<&&TokenWithContext>) -> bool {
         matches!(
             t,
@@ -219,9 +214,9 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
-        // TODO: Finish this implementation..
-        // let statement = parse_declaration(tokens)?;
-        // statements.push(statement)
+        // TODO: Finish this implementation.. We should have a method that parses the content of field tags, eg.. parse_tags
+        let statement = parse_declaration(tokens)?;
+        statements.push(statement)
     }
     if is_block_end(tokens.peek()) {
         let _ = tokens.next();
@@ -231,10 +226,7 @@ where
     }
 }
 
-fn parse_field_with_list_type<'a, I>(
-    field_name: FieldName,
-    tokens: &mut Peekable<I>,
-) -> Result<AST, ParseError>
+fn parse_type_of_list_with_field<'a, I>(tokens: &mut Peekable<I>) -> Result<FieldType, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -243,36 +235,34 @@ where
         Token::DataType(specified_type) => {
             let _ = tokens.next();
             let specified_type = ast::FieldType::List(specified_type.clone());
-            Ok(AST::Field(ast::Field::Plain(field_name, specified_type)))
+            Ok(specified_type)
         }
         Token::Identifier(custom_type) => {
             let _ = tokens.next();
-            let specified_type = ast::FieldType::One(ast::DataType::Custom(custom_type.clone()));
-            Ok(AST::Field(ast::Field::Plain(field_name, specified_type)))
+            let specified_type = ast::FieldType::List(ast::DataType::Custom(custom_type.clone()));
+            Ok(specified_type)
         }
         _ => Err(ParseError::UnexpectedElement(token.lexeme.clone())),
     }
 }
 
-fn parse_grey_accent_tokens_on_list_type<'a, I>(
-    ast_before: AST,
+fn parse_json_tags_on_list_field_type<'a, I>(
     tokens: &mut Peekable<I>,
-) -> Result<AST, ParseError>
+) -> Result<Vec<AST>, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
 
-    match (ast_before, &current_element.token) {
-        (ast::AST::Field(ast::Field::Plain(field_name, specified_type)), Token::Graveaccent) => {
+    match &current_element.token {
+        Token::Graveaccent => {
             let _ = tokens.next();
-            let res = parse_backtick_block(tokens)?;
-            let field = ast::Field::WithTags(field_name, specified_type, res);
-            Ok(ast::AST::Field(field))
+            let res = parse_field_tags(tokens)?;
+            Ok(res)
         }
-        (p, Token::NextLine) => {
+        Token::NextLine => {
             let _ = tokens.next();
-            Ok(p)
+            Ok(Vec::new())
         }
         _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
     }
