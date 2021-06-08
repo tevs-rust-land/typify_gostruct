@@ -18,7 +18,6 @@ pub enum Token {
     // Keywords
     Type,
     Struct,
-    Binding,
     DataType(DataType),
 }
 
@@ -138,11 +137,8 @@ impl<'a> Scanner<'a> {
             .skip(1)
             .take(literal_length)
             .collect();
-        if literal == "binding" {
-            Ok(Token::Binding)
-        } else {
-            Ok(Token::StringLiteral(literal))
-        }
+
+        Ok(Token::StringLiteral(literal))
     }
 
     fn identifier(&mut self) -> Token {
@@ -150,7 +146,6 @@ impl<'a> Scanner<'a> {
         match self.current_lexeme.as_ref() {
             "type" => Token::Type,
             "struct" => Token::Struct,
-            "binding" => Token::Binding,
             // data types
             "int64" => Token::DataType(DataType::Number),
             "float64" => Token::DataType(DataType::Number),
