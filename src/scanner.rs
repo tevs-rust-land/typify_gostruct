@@ -1,4 +1,4 @@
-use crate::data_types::Type;
+use crate::ast::DataType;
 use std::iter::Peekable;
 use std::str;
 
@@ -18,9 +18,7 @@ pub enum Token {
     // Keywords
     Type,
     Struct,
-    Binding,
-    Json,
-    DataType(Type),
+    DataType(DataType),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -139,11 +137,8 @@ impl<'a> Scanner<'a> {
             .skip(1)
             .take(literal_length)
             .collect();
-        if literal == "binding" {
-            Ok(Token::Binding)
-        } else {
-            Ok(Token::StringLiteral(literal))
-        }
+
+        Ok(Token::StringLiteral(literal))
     }
 
     fn identifier(&mut self) -> Token {
@@ -151,18 +146,13 @@ impl<'a> Scanner<'a> {
         match self.current_lexeme.as_ref() {
             "type" => Token::Type,
             "struct" => Token::Struct,
-            "binding" => Token::Binding,
-            "json" => Token::Json,
             // data types
-            "int64" => Token::DataType(Type::Number),
-            "float64" => Token::DataType(Type::Number),
-            "string" => Token::DataType(Type::String),
-            "null.String" => Token::DataType(Type::NullString),
-            "null.Float" => Token::DataType(Type::NullString),
-            "null.Int" => Token::DataType(Type::NullNumber),
-            "int" => Token::DataType(Type::Number),
-            "time.Time" => Token::DataType(Type::String),
-            "bool" => Token::DataType(Type::Boolean),
+            "int64" => Token::DataType(DataType::Number),
+            "float64" => Token::DataType(DataType::Number),
+            "string" => Token::DataType(DataType::String),
+            "int" => Token::DataType(DataType::Number),
+            "time.Time" => Token::DataType(DataType::String),
+            "bool" => Token::DataType(DataType::Boolean),
             identifier => Token::Identifier(identifier.into()),
         }
     }
@@ -220,7 +210,7 @@ pub fn scan_into_iterator<'a>(
     }
 }
 
-pub fn scan(source: &str) -> (Vec<TokenWithContext>, Vec<ScannerError>) {
+pub fn scan(source: &str) -> Result<Vec<TokenWithContext>, Vec<String>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
     for result in scan_into_iterator(source) {
@@ -232,8 +222,12 @@ pub fn scan(source: &str) -> (Vec<TokenWithContext>, Vec<ScannerError>) {
                     _ => tokens.push(token_with_context),
                 };
             }
-            Err(error) => errors.push(error),
+            Err(error) => errors.push(format!("{:?}", error)),
         }
     }
-    (tokens, errors)
+    if errors.is_empty() {
+        Ok(tokens)
+    } else {
+        Err(errors)
+    }
 }

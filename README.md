@@ -12,21 +12,22 @@ use js_typify_gostruct;
 fn main() {
     let example = r#"
     type Region struct {
-    Country string `json:"country" binding:"required"`
-    State string `json:"state" binding:"required"`
+    Country string `json:"country"`
+    State string `json:"state"`
 }
     "#;
     // converts to flow
-    match js_typify_gostruct::transform_to_flow(example.to_string()) {
-        Ok(results) => println!("{}", results), // prints out export type Region = { country:string; state:string; };
-        Err(parse_errors) => println!("{:?}", parse_errors),
-    }
+    let result = js_typify_gostruct::transform(example, "flow")?;
+    // result will be
+    // // @flow
+   //export type Region = {country : string, state : string, }
 
     // converts to typescript
-    match js_typify_gostruct::transform_to_typescript(example.to_string()) {
-        Ok(results) => println!("{}", results), // prints out export interface Region { country:string; state:string; };
-        Err(parse_errors) => println!("{:?}", parse_errors),
-    }
+    let result = js_typify_gostruct::transform(example, "typescript")?;
+    println!("{}", result);
+
+    // result will be
+   //export interface Region = {country : string, state : string, }
 }
 
 ```
@@ -42,3 +43,11 @@ eg
 ```
 cargo run --example flow
 ```
+
+```
+cargo run --example typescript
+```
+
+TODO
+
+- [ ] Re-introduce tests.
