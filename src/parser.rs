@@ -152,7 +152,6 @@ where
     match &element.token {
         Token::Identifier(identifier) => {
             let _ = tokens.next();
-            println!("{}", identifier);
             let (field_type, field_tags) = parse_field_type_with_tags(tokens)?;
             let field_name = ast::FieldName(identifier.to_string());
 

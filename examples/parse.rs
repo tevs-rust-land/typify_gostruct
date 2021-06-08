@@ -4,6 +4,7 @@ fn main() -> Result<(), Vec<String>> {
     Country string `json:"country" binding:"required"`
     State string 
     }
+
     "#;
     let tokens = js_typify_gostruct::scanner::scan(example)?;
     let parsed_result = js_typify_gostruct::parser::parse(&tokens)?;

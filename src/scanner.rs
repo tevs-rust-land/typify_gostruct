@@ -226,8 +226,8 @@ pub fn scan(source: &str) -> Result<Vec<TokenWithContext>, Vec<String>> {
         }
     }
     if errors.is_empty() {
-        Err(errors)
-    } else {
         Ok(tokens)
+    } else {
+        Err(errors)
     }
 }
