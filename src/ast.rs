@@ -5,7 +5,7 @@ use crate::scanner::Position;
 #[derive(Debug)]
 pub struct StructDeclaration {
     pub name: String,
-    pub body: Vec<AST>,
+    pub body: Vec<AST>, // TODO: Convert this to vec<Field>
 }
 
 #[derive(Debug)]
