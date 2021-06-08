@@ -48,13 +48,7 @@ impl Interpreter for FlowInterpreter {
                 }
             }
             Field::WithTags(field_name, field_type, field_tags) => {
-                let field_type = self.convert_convert_field_type(field_type);
-                match field_type {
-                    FieldTypeResult::Normal(field_type) => {
-                        format!("{} : {},", field_name.0, field_type)
-                    }
-                    FieldTypeResult::Embedded => format!("...{}", field_name.0),
-                }
+                self.interpret_field_with_tags(field_name, field_type, field_tags)
             }
         };
 
@@ -95,7 +89,7 @@ impl Interpreter for FlowInterpreter {
             }
         }
         match field_type {
-            FieldTypeResult::Normal(field_type) => format!("{}:{}", field_name, field_type),
+            FieldTypeResult::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
             _ => unreachable!(),
         }
     }
