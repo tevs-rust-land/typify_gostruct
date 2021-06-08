@@ -5,7 +5,7 @@ fn main() -> Result<(), Vec<String>> {
     State string 
     }
     "#;
-    let (tokens, _error) = js_typify_gostruct::scanner::scan(example);
+    let tokens = js_typify_gostruct::scanner::scan(example)?;
     let parsed_result = js_typify_gostruct::parser::parse(&tokens)?;
     println!("{:?}", parsed_result);
 

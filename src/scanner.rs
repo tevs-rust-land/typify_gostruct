@@ -210,7 +210,7 @@ pub fn scan_into_iterator<'a>(
     }
 }
 
-pub fn scan(source: &str) -> (Vec<TokenWithContext>, Vec<ScannerError>) {
+pub fn scan(source: &str) -> Result<Vec<TokenWithContext>, Vec<String>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
     for result in scan_into_iterator(source) {
@@ -222,8 +222,12 @@ pub fn scan(source: &str) -> (Vec<TokenWithContext>, Vec<ScannerError>) {
                     _ => tokens.push(token_with_context),
                 };
             }
-            Err(error) => errors.push(error),
+            Err(error) => errors.push(format!("{:?}", error)),
         }
     }
-    (tokens, errors)
+    if errors.is_empty() {
+        Err(errors)
+    } else {
+        Ok(tokens)
+    }
 }
