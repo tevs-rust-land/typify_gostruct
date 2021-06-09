@@ -56,3 +56,4 @@ TODO
 - [ ] Re-introduce tests.
 - [ ] Add documentation for the library.
 - [ ] Introduce interpreter support for other languages,eg, gostruct -> rust struct....
+- [ ] Make a WASM wrapper for this library so that it can be used natively on the web.
