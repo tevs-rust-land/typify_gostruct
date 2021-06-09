@@ -1,6 +1,6 @@
 use crate::ast::{DataType, Field, FieldType, StructDeclaration, TagKey, AST};
 
-use super::Interpreter;
+use super::{Interpreter, InterpreterError};
 
 pub struct FlowInterpreter();
 
@@ -9,16 +9,16 @@ static OPENING_BRACKET: char = '{';
 static CLOSING_BRACKET: char = '}';
 
 impl Interpreter for FlowInterpreter {
-    fn interpret(&self, ast: Vec<crate::ast::AST>) -> String {
+    fn interpret(&self, ast: Vec<crate::ast::AST>) -> Result<String, InterpreterError> {
         let mut result = "// @flow\n".to_string();
         for item in ast {
             let struct_results = match item {
                 AST::Declaration(declaration) => self.interpret_struct(*declaration),
-                _ => unreachable!(),
+                _ => return Err(InterpreterError::ExpectedStructFoundField),
             };
             result.push_str(&struct_results)
         }
-        result
+        Ok(result)
     }
 }
 
@@ -103,7 +103,7 @@ impl FlowInterpreter {
         }
         match field_type {
             super::FieldType::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
-            _ => unreachable!(),
+            super::FieldType::Embedded => format!("...{}", field_name), // TODO: find out later if its possible to have embedded fields with with JSON tags
         }
     }
 }

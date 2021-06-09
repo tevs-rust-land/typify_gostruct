@@ -4,6 +4,9 @@
 
 A rust tool meant to convert a golang struct to a js type object.
 
+Based on the new re-write the name of this library might change,
+Its now possible to have interpreters for all sorts of languages, not just Javascript based Languages.
+
 ## How to use
 
 ```rs
@@ -50,4 +53,7 @@ cargo run --example typescript
 
 TODO
 
-- [ ] Re-introduce tests.
+- [ ] Re-introduce tests & fix bugs.
+- [ ] Add documentation for the library.
+- [ ] Introduce interpreter support for other languages,eg, gostruct -> rust struct....
+- [ ] Make a WASM wrapper for this library so that it can be used natively on the web.
