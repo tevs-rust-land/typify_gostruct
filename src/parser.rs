@@ -60,7 +60,7 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<AST>, Vec<String>> {
     let mut errors = Vec::new();
     let mut peekable_tokens = tokens.iter().peekable();
     loop {
-        let result = parse_declaration(&mut peekable_tokens);
+        let result = parsing_entrypoint(&mut peekable_tokens);
         match result {
             Ok(statement) => statements.push(statement),
             Err(ParseError::UnexpectedEndOfFile) => {
@@ -78,7 +78,7 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<AST>, Vec<String>> {
     }
 }
 
-fn parse_declaration<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
+fn parsing_entrypoint<'a, I>(tokens: &mut Peekable<I>) -> Result<AST, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -90,7 +90,7 @@ where
         }
         Token::NextLine => {
             let _ = tokens.next();
-            parse_declaration(tokens)
+            parsing_entrypoint(tokens)
         }
         _ => Err(ParseError::UnknownElement(element.lexeme.clone())),
     }
@@ -126,19 +126,15 @@ where
         )
     };
     while !is_block_end(tokens.peek()) {
-        let statement = parse_struct_fields(tokens)?;
+        let statement = parse_struct_field(tokens)?;
         statements.push(statement)
     }
 
-    if is_block_end(tokens.peek()) {
-        let _ = tokens.next();
-        Ok(statements)
-    } else {
-        Err(ParseError::UnexpectedEndOfFile)
-    }
+    let _ = tokens.next();
+    Ok(statements)
 }
 
-fn parse_struct_fields<'a, I>(tokens: &mut Peekable<I>) -> Result<Field, ParseError>
+fn parse_struct_field<'a, I>(tokens: &mut Peekable<I>) -> Result<Field, ParseError>
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
@@ -159,7 +155,7 @@ where
         }
         Token::NextLine => {
             let _ = tokens.next();
-            parse_struct_fields(tokens)
+            parse_struct_field(tokens)
         }
         Token::RightBrace => Ok(ast::Field::Blank),
         _ => Err(ParseError::UnknownElement(element.lexeme.clone())),
@@ -234,12 +230,8 @@ where
         let tag_value = TagValue(tag_value);
         json_tags.insert(identifier, tag_value);
     }
-    if is_block_end(tokens.peek()) {
-        let _ = tokens.next();
-        Ok(json_tags)
-    } else {
-        Err(ParseError::UnexpectedEndOfFile)
-    }
+    let _ = tokens.next();
+    Ok(json_tags)
 }
 
 fn parse_type_of_list_with_field<'a, I>(tokens: &mut Peekable<I>) -> Result<FieldType, ParseError>
