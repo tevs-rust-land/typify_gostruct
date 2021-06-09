@@ -29,6 +29,8 @@ where
     let source = source.to();
     let tokens = scanner::scan(source)?;
     let parsed_result = parser::parse(&tokens)?;
-    let interpreter = select_interpreter(target);
-    Ok(interpreter.interpret(parsed_result))
+    let interpreter = select_interpreter(target)?;
+    interpreter
+        .interpret(parsed_result)
+        .map_err(|err| err.into())
 }
