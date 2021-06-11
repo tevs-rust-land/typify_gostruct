@@ -1,3 +1,5 @@
+use js_typify_gostruct::Source;
+
 fn main() -> Result<(), Vec<String>> {
     let example = r#"
     type Region struct {
@@ -6,7 +8,8 @@ fn main() -> Result<(), Vec<String>> {
     }
     "#;
 
-    let result = js_typify_gostruct::transform(example, "typescript")?;
+    let source = Source::new(example);
+    let result = source.transform_to("typescript")?;
     println!("{}", result);
     Ok(())
 }

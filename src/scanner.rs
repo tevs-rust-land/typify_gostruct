@@ -203,17 +203,33 @@ impl<'a> Iterator for TokensIterator<'a> {
 }
 
 pub fn scan_into_iterator<'a>(
-    source: &'a str,
+    input: &'a str,
 ) -> impl Iterator<Item = Result<TokenWithContext, ScannerError>> + 'a {
     TokensIterator {
-        scanner: Scanner::initialize(source),
+        scanner: Scanner::initialize(input),
     }
 }
 
-pub fn scan(source: &str) -> Result<Vec<TokenWithContext>, Vec<String>> {
+pub trait Input {
+    fn to(&self) -> &str;
+}
+
+impl Input for &str {
+    fn to(&self) -> &str {
+        self
+    }
+}
+
+impl Input for String {
+    fn to(&self) -> &str {
+        self.as_str()
+    }
+}
+
+pub fn scan(input: impl Input) -> Result<Vec<TokenWithContext>, Vec<String>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
-    for result in scan_into_iterator(source) {
+    for result in scan_into_iterator(input.to()) {
         match result {
             Ok(token_with_context) => {
                 match token_with_context.token {
