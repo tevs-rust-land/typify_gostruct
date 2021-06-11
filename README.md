@@ -10,7 +10,7 @@ Its now possible to have interpreters for all sorts of languages, not just Javas
 ## How to use
 
 ```rs
-use js_typify_gostruct;
+use js_typify_gostruct::Source;
 
 fn main() {
     let example = r#"
@@ -20,13 +20,16 @@ fn main() {
 }
     "#;
     // converts to flow
-    let result = js_typify_gostruct::transform(example, "flow")?;
+
+    let source = Source::new(example);
+    let result = source.transform_to("flow")?;
+    println!("{}", result);
     // result will be
     // // @flow
    //export type Region = {country : string, state : string, }
 
     // converts to typescript
-    let result = js_typify_gostruct::transform(example, "typescript")?;
+    let result = source.transform_to("typescript")?;
     println!("{}", result);
 
     // result will be
