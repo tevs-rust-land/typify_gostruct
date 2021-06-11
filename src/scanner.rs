@@ -211,17 +211,17 @@ pub fn scan_into_iterator<'a>(
 }
 
 pub trait Input {
-    fn to(&self) -> &str;
+    fn to_str(&self) -> &str;
 }
 
 impl Input for &str {
-    fn to(&self) -> &str {
+    fn to_str(&self) -> &str {
         self
     }
 }
 
 impl Input for String {
-    fn to(&self) -> &str {
+    fn to_str(&self) -> &str {
         self.as_str()
     }
 }
@@ -229,7 +229,7 @@ impl Input for String {
 pub fn scan(input: impl Input) -> Result<Vec<TokenWithContext>, Vec<String>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
-    for result in scan_into_iterator(input.to()) {
+    for result in scan_into_iterator(input.to_str()) {
         match result {
             Ok(token_with_context) => {
                 match token_with_context.token {
