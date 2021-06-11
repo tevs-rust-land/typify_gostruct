@@ -12,7 +12,7 @@ Its now possible to have interpreters for all sorts of languages, not just Javas
 ```rs
 use js_typify_gostruct::Source;
 
-fn main() {
+fn main() -> Result<(), Vec<String>> {
     let example = r#"
     type Region struct {
     Country string `json:"country"`
@@ -34,6 +34,8 @@ fn main() {
 
     // result will be
    //export interface Region = {country : string, state : string, }
+
+   Ok(())
 }
 
 ```
