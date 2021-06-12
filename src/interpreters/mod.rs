@@ -43,14 +43,14 @@ pub trait Interpreter {
     fn interpret(&self, ast: Vec<AST>) -> Result<String, InterpreterError>;
 }
 
-pub trait TargetIntepreter {
-    fn get_implementation(&self) -> Result<Box<dyn Interpreter>, InterpreterError>;
+pub trait ToInterpreter {
+    fn convert(&self) -> Result<Box<dyn Interpreter>, InterpreterError>;
 }
 
 macro_rules! interpreter_impl_for {
     ($t:ty) => {
-        impl TargetIntepreter for $t {
-            fn get_implementation(&self) -> Result<Box<dyn Interpreter>, InterpreterError> {
+        impl ToInterpreter for $t {
+            fn convert(&self) -> Result<Box<dyn Interpreter>, InterpreterError> {
                 let name = self.to_ascii_lowercase();
                 match name.as_ref() {
                     "flow" => Ok(Box::new(FlowInterpreter::new())),
@@ -64,9 +64,3 @@ macro_rules! interpreter_impl_for {
 
 interpreter_impl_for!(&str);
 interpreter_impl_for!(String);
-
-pub fn select_interpreter(
-    interpreter: impl TargetIntepreter,
-) -> Result<Box<dyn Interpreter>, InterpreterError> {
-    interpreter.get_implementation()
-}

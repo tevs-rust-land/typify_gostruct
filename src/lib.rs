@@ -1,6 +1,6 @@
 #![crate_name = "js_typify_gostruct"]
 
-use interpreters::{select_interpreter, TargetIntepreter};
+use interpreters::ToInterpreter;
 use scanner::Input;
 
 mod ast;
@@ -56,11 +56,11 @@ where
     /// ```
     pub fn transform_to<T>(&self, target: T) -> Result<String, Vec<String>>
     where
-        T: TargetIntepreter,
+        T: ToInterpreter,
     {
         let tokens = scanner::scan(self.0)?;
         let parsed_result = parser::parse(&tokens)?;
-        let interpreter = select_interpreter(target)?;
+        let interpreter = target.convert()?;
         interpreter
             .interpret(parsed_result)
             .map_err(|err| err.into())
