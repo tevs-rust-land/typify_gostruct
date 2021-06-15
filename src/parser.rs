@@ -138,7 +138,7 @@ fn parse_struct_field<'a, I>(tokens: &mut Peekable<I>) -> Result<Field, ParseErr
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
+    let element = tokens.peek().ok_or(ParseError::UnexpectedEndOfStruct)?;
 
     match &element.token {
         Token::Identifier(identifier) => {
@@ -273,5 +273,55 @@ where
             Ok(HashMap::new())
         }
         _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{
+        parser::parse,
+        scanner::{self},
+    };
+
+    #[test]
+    #[should_panic]
+    fn test_with_unclosed_brace() {
+        let invalid_example = r#"
+        type Region struct {
+          Country string `json:"country" binding:"required"`
+          State string 
+    "#;
+        let tokens = scanner::scan(invalid_example).expect("to be scanned correctly");
+        parse(&tokens).expect("should panic because of unclosed brace");
+    }
+
+    #[test]
+    fn test_error_returned_with_unclosed_brace() {
+        let invalid_example = r#"
+        type Region struct {
+          Country string `json:"country" binding:"required"`
+          State string 
+    "#;
+        let tokens = scanner::scan(invalid_example).expect("to be scanned correctly");
+        let parsed_result = parse(&tokens);
+        match parsed_result {
+            Ok(_ast) => panic!("This test should not pass"),
+            Err(err) => {
+                assert_eq!(err.len(), 1);
+            }
+        }
+    }
+    #[test]
+    fn test_should_parse_valid_struct_correctly() {
+        let valid_struct = r#"
+        type Region struct {
+          Country string `json:"country" binding:"required"`
+          State string 
+        }
+    "#;
+        let tokens = scanner::scan(valid_struct).expect("to be scanned correctly");
+        let parsed_result = parse(&tokens).expect("The struct should be parsed correctly");
+        assert_eq!(parsed_result.len(), 1)
     }
 }

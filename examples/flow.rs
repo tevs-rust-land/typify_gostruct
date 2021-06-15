@@ -6,7 +6,7 @@ fn main() -> Result<(), Vec<String>> {
     Country string `json:"country" binding:"required"`
     State string 
     }
-    "#; // TODO: Fix bug for scenario when the closing } is not provided
+    "#;
     let source = Source::new(example);
     let result = source.transform_to("flow")?;
     println!("{}", result);

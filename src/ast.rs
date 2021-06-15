@@ -76,6 +76,7 @@ pub enum ParseError {
     UnknownElement(String),
     UnexpectedEndOfFile,
     Missing(RequiredElements, String, Position),
+    UnexpectedEndOfStruct,
 }
 
 impl fmt::Display for ParseError {
@@ -92,6 +93,9 @@ impl fmt::Display for ParseError {
                     "Expected `{}` but found `{}` at line {} column {} ",
                     token, lexeme, line, column
                 )
+            }
+            &ParseError::UnexpectedEndOfStruct => {
+                write!(f, "Expected `}}` before the end of the struct")
             }
         }
     }

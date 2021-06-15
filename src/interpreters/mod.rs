@@ -11,6 +11,7 @@ pub enum FieldType {
     Embedded,
 }
 
+#[derive(PartialEq, Debug)]
 pub enum InterpreterError {
     ExpectedStructFoundField,
     UnexpectedInterpreterName(String),
@@ -64,3 +65,42 @@ macro_rules! interpreter_impl_for {
 
 interpreter_impl_for!(&str);
 interpreter_impl_for!(String);
+
+#[cfg(test)]
+mod tests {
+    use crate::interpreters::InterpreterError;
+
+    use super::ToInterpreter;
+
+    #[test]
+    fn invalid_interpreter_name_should_return_error() {
+        let target = "glow".to_string();
+        let result = target.convert();
+        match result {
+            Ok(_interpreter) => panic!("Should not return an interpreter"),
+            Err(err) => {
+                assert_eq!(
+                    err,
+                    InterpreterError::UnexpectedInterpreterName("glow".to_string())
+                )
+            }
+        }
+    }
+
+    #[test]
+    fn test_should_return_valid_interpreter() {
+        let target = "flow".to_string();
+        let result = target.convert();
+        match result {
+            Ok(interpreter) => {
+                let result = interpreter
+                    .interpret(Vec::new())
+                    .expect("Should not fail to interpret");
+                assert!(result.contains("// @flow"))
+            }
+            Err(_err) => {
+                panic!("Flow is a valid interpreter")
+            }
+        }
+    }
+}

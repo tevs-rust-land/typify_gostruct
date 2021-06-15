@@ -66,3 +66,52 @@ where
             .map_err(|err| err.into())
     }
 }
+
+mod tests {
+
+    #[test]
+    fn should_transform_struct_with_flow_interpeter_successfully() {
+        let input = r#"
+            type Region struct {
+            Country string `json:"country" binding:"required"`
+            State string
+        }"#;
+        let source = super::Source::new(input);
+        let result = source
+            .transform_to("flow")
+            .expect("The struct should be transformed without an issue");
+        assert!(result.contains("// @flow"));
+        assert!(result.contains("country : string"));
+        assert!(result.contains("State : string"))
+    }
+
+    #[test]
+    fn should_transform_struct_with_typescript_interpeter_successfully() {
+        let input = r#"
+            type Region struct {
+            Country string `json:"country" binding:"required"`
+            State string
+        }"#;
+        let source = super::Source::new(input);
+        let result = source
+            .transform_to("typescript")
+            .expect("The struct should be transformed without an issue");
+        assert!(result.contains("export interface Region"));
+        assert!(result.contains("country : string"));
+        assert!(result.contains("State : string"))
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_return_error_if_struct_isnt_valid() {
+        let input = r#"
+            type Region struct {
+            Country string `json:"country" binding:"required"`
+            State string
+        "#;
+        let source = super::Source::new(input);
+        source
+            .transform_to("typescript")
+            .expect("The struct has a missing right brace and so it should fail to parse");
+    }
+}
