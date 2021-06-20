@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "typify_gostruct",
+    "wasm"
+]
