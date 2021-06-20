@@ -2,15 +2,17 @@
 
 ## JS_TYPIFY_GOSTRUCT
 
-A rust tool meant to convert a golang struct to a js type object.
+A rust tool meant to convert a golang struct to a type object/interface or the supported languages.
 
-Based on the new re-write the name of this library might change,
-Its now possible to have interpreters for all sorts of languages, not just Javascript based Languages.
+### Supported languages / typesystems.
+
+1. flow
+2. typescript
 
 ## How to use
 
 ```rs
-use js_typify_gostruct::Source;
+use typify_gostruct::Source;
 
 fn main() -> Result<(), Vec<String>> {
     let example = r#"

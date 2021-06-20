@@ -6,7 +6,7 @@ edition = "2018"
 repository = "https://github.com/tevs-rust-land/typify_gostruct"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-
+description = "The struct interpreter converts a struct to type objects/interfaces of provided languages."
 [lib]
 crate-type = ["cdylib", "rlib"]
 
