@@ -114,4 +114,17 @@ mod tests {
             .transform_to("typescript")
             .expect("The struct has a missing right brace and so it should fail to parse");
     }
+
+    #[test]
+    fn should_return_error() {
+        let input = r#"
+        person struct {
+            name string
+            age  int
+        }
+        "#;
+        let source = super::Source::new(input);
+
+        source.transform_to("typescript");
+    }
 }

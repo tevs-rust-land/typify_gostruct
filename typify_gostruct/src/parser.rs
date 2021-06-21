@@ -68,6 +68,8 @@ pub fn parse(tokens: &[TokenWithContext]) -> Result<Vec<AST>, Vec<String>> {
             }
             Err(error) => {
                 errors.push(format!("{}", error));
+                // TODO: Enable synchronization for this errors.
+                break;
             }
         }
     }
