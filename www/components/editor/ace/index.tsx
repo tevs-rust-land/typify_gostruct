@@ -1,27 +1,38 @@
 import React, { useMemo } from "react";
 import AceEditor from "react-ace";
 
-import "ace-builds/src-noconflict/mode-golang";
-import "ace-builds/src-noconflict/mode-javascript";
+import ace from "ace-builds"
 
-import "ace-builds/src-noconflict/theme-github";
 
 import { EditorProps } from "../interface";
 import { Language } from "../../languagePicker/interface";
 
+const CDN = "https://cdn.jsdelivr.net/npm/ace-builds@1.4.12/src-noconflict"
+
+ace.config.set("basePath", CDN)
+ace.config.set('modePath', CDN);
+ace.config.set('themePath', CDN);
+ace.config.set('workerPath', CDN);
 
 const Editor = (props: EditorProps) => {
   const { value, onValueChange, language } = props;
-  
+  const mode = useMemo(() => {
+    const modes = {
+      [Language.Flow]: "typescript",
+      [Language.Typescript]: "typescript",
+      [Language.Go]: "golang"
+    }
+    const selectedMode = modes[language];
+    return selectedMode ? selectedMode : "typescript"
+  }, [])
   return (
     <div>
         <AceEditor
            value={value}
-           mode={"java"}
-           theme="dawn"
+           mode={mode}
+           theme="github"
            onChange={onValueChange}
-           name="UNIQUE_ID_OF_DIV"
-           editorProps={{ $blockScrolling: true }}
+           editorProps={{ $blockScrolling: true, width: 400 }}
          />
     </div>
   );
