@@ -1,10 +1,17 @@
 import { useRef, useEffect, useState } from "react";
 
 import { Language } from "../interfaces/language";
+
+const defaultStruct = `
+type Vertex struct {
+	X int
+	Y int
+}
+`;
 export default function useGoStruct() {
   const [transformer, setTransformer] = useState(null);
 
-  const [source, setSource] = useState<string>("");
+  const [source, setSource] = useState<string>(defaultStruct);
   const [result, setResult] = useState<string>("");
   const [targetLanguageName, setTargetLanguage] = useState<Language>(
     Language.Flow
@@ -15,7 +22,7 @@ export default function useGoStruct() {
   useEffect(() => {
     if (!transformer) return;
     try {
-      const value = transformer(source, targetLanguageName);
+      const value = transformer.transform(source, targetLanguageName);
       setResult(value);
     } catch (error) {
       setResult(formatError(String(error)));
@@ -30,8 +37,8 @@ export default function useGoStruct() {
   };
   useEffect(() => {
     import("typify_gostruct_wasm")
-      .then(({ transform }) => {
-        setTransformer(() => transform);
+      .then((transformer) => {
+        setTransformer(() => transformer);
       })
       .catch(() => {
         setResult(

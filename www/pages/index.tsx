@@ -5,7 +5,8 @@ import Container from "../components/container";
 import SplitEditorWrapper from "../components/splitEditorWrapper";
 import { Language } from "../interfaces/language";
 import useGoStructInterpreter from "../hooks/useGoStructInterpreter";
-// import Editor from "../components/editor/editor"
+import CopyResults from "../components/copyResults";
+import ActionsWrapper from "../components/actionsWrapper";
 const Editor = dynamic(() => import("../components/editor/editor"), {
   ssr: false,
 });
@@ -21,10 +22,16 @@ const IndexPage = () => {
   } = useGoStructInterpreter();
   return (
     <Container>
-      <h1>Hello 👋, lets do some transformation.</h1>
-      <LanguagePicker
-        language={targetLanguageName}
-        setLanguage={setTargetLanguage}
+      <h1>Hello 👋, lets do some GO transformation. 🚀</h1>
+
+      <ActionsWrapper
+        firstAction={
+          <LanguagePicker
+            language={targetLanguageName}
+            setLanguage={setTargetLanguage}
+          />
+        }
+        secondAction={<CopyResults result={result} />}
       />
       <SplitEditorWrapper
         firstEditor={

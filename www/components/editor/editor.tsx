@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import SimpleEditor from "react-simple-code-editor";
-import { highlight, languages } from "prismjs/components/prism-core";
-import "prismjs/components/prism-clike";
-import "prismjs/components/prism-javascript";
+import "prismjs/themes/prism.css";
+
+import Prism from "prismjs";
+
+import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-go";
 
 import { EditorProps } from "./interface";
@@ -10,25 +12,27 @@ import { Language } from "../../interfaces/language";
 
 export default function EditorWrapper(props: EditorProps) {
   const { value, onValueChange, language } = props;
-
+  console.log(Prism.languages);
   const languageToHighlight = useMemo(() => {
     const languagePresets = {
-      [Language.Flow]: languages.typescript,
-      [Language.Typescript]: languages.typescript,
-      [Language.Go]: languages.go,
+      [Language.Flow]: Prism.languages.typescript,
+      [Language.Typescript]: Prism.languages.typescript,
+      [Language.Go]: Prism.languages.go,
     };
     const selectedLanguage = languagePresets[language];
-    return selectedLanguage ? selectedLanguage : languages.typescript;
+    return selectedLanguage ? selectedLanguage : Prism.languages.typescript;
   }, []);
   return (
     <SimpleEditor
       value={value}
       onValueChange={onValueChange}
       padding={10}
-      highlight={(code) => highlight(code, languageToHighlight)}
+      highlight={(code) => Prism.highlight(code, languageToHighlight)}
       style={{
         fontFamily: "JetBrains Mono",
         fontSize: 12,
+        fontWeight: "bolder",
+        minHeight: 400,
       }}
     />
   );
