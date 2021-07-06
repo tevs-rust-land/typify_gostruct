@@ -1,6 +1,6 @@
 [package]
 name = "typify_gostruct_wasm"
-version = "0.1.2"
+version = "0.1.5"
 authors = ["Tevinthuku <tevinthuku@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/tevs-rust-land/typify_gostruct"

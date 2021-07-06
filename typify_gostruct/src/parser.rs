@@ -199,6 +199,7 @@ where
         }
         Token::LeftBracket => {
             let _ = tokens.next();
+            consume_expected_token!(tokens, &Token::RightBracket, RequiredElements::RightBracket)?;
             let field_type = parse_type_of_list_with_field(tokens)?;
             let field_tags = parse_field_tags_if_present(tokens)?;
             Ok((field_type, field_tags))
@@ -240,7 +241,7 @@ fn parse_type_of_list_with_field<'a, I>(tokens: &mut Peekable<I>) -> Result<Fiel
 where
     I: Iterator<Item = &'a TokenWithContext>,
 {
-    let token = tokens.next().ok_or(ParseError::UnexpectedEndOfFile)?;
+    let token = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
     match &token.token {
         Token::DataType(specified_type) => {
             let _ = tokens.next();
@@ -263,7 +264,6 @@ where
     I: Iterator<Item = &'a TokenWithContext>,
 {
     let current_element = tokens.peek().ok_or(ParseError::UnexpectedEndOfFile)?;
-
     match &current_element.token {
         Token::Graveaccent => {
             let _ = tokens.next();
@@ -274,7 +274,9 @@ where
             let _ = tokens.next();
             Ok(HashMap::new())
         }
-        _ => Err(ParseError::UnexpectedElement("Unexpected".to_string())),
+        _ => Err(ParseError::UnexpectedElement(
+            current_element.lexeme.clone(),
+        )),
     }
 }
 
@@ -325,5 +327,31 @@ mod tests {
         let tokens = scanner::scan(valid_struct).expect("to be scanned correctly");
         let parsed_result = parse(&tokens).expect("The struct should be parsed correctly");
         assert_eq!(parsed_result.len(), 1)
+    }
+
+    #[test]
+    fn test_should_parse_struct_with_list_correctly() {
+        let valid_struct = r#"
+            type List struct {
+                People    []*Person
+            }
+        "#;
+        let tokens = scanner::scan(valid_struct).expect("to be scanned correctly");
+
+        let parsed_result = parse(&tokens);
+        assert!(parsed_result.is_ok())
+    }
+
+    #[test]
+    fn test_should_parse_struct_with_list_and_json_tags_correctly() {
+        let valid_struct = r#"
+            type List struct {
+                People    []*Person `json:"people"`
+            }
+        "#;
+        let tokens = scanner::scan(valid_struct).expect("to be scanned correctly");
+
+        let parsed_result = parse(&tokens);
+        assert!(parsed_result.is_ok())
     }
 }

@@ -36,7 +36,7 @@ impl FlowInterpreter {
         }
     }
     fn interpret_struct(&self, declaration: StructDeclaration) -> String {
-        let mut result = format!("export type {} = ", declaration.name);
+        let mut result = format!("\n export type {} = ", declaration.name);
         result.push(OPENING_BRACKET);
 
         for item in declaration.body {
@@ -57,7 +57,7 @@ impl FlowInterpreter {
                     super::FieldType::Normal(field_type) => {
                         format!("{} : {},", field_name.0, field_type)
                     }
-                    super::FieldType::Embedded => format!("...{}", field_name.0),
+                    super::FieldType::Embedded => format!("...{}, ", field_name.0),
                 }
             }
             Field::WithTags(field_name, field_type, field_tags) => {
@@ -70,7 +70,7 @@ impl FlowInterpreter {
     }
 
     fn convert_field_type(&self, field_type: FieldType) -> super::FieldType {
-        let single_of_list = match field_type {
+        let single_or_list_item_notation = match field_type {
             FieldType::List(_) => "[]",
             FieldType::One(_) => "",
         };
@@ -80,9 +80,10 @@ impl FlowInterpreter {
         };
 
         match field_type {
-            super::FieldType::Normal(specified_type) => {
-                super::FieldType::Normal(format!("{}{}", single_of_list, specified_type))
-            }
+            super::FieldType::Normal(specified_type) => super::FieldType::Normal(format!(
+                "{}{}",
+                specified_type, single_or_list_item_notation
+            )),
             super::FieldType::Embedded => super::FieldType::Embedded,
         }
     }
@@ -103,7 +104,7 @@ impl FlowInterpreter {
         }
         match field_type {
             super::FieldType::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
-            super::FieldType::Embedded => format!("...{}", field_name), // TODO: find out later if its possible to have embedded fields with with JSON tags
+            super::FieldType::Embedded => format!("...{}, ", field_name), // TODO: find out later if its possible to have embedded fields with with JSON tags
         }
     }
 }

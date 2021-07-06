@@ -1,6 +1,6 @@
 [package]
 name = "typify_gostruct"
-version = "1.0.1"
+version = "1.0.5"
 authors = ["Tevinthuku <tevinthuku@gmail.com>"]
 edition = "2018"
 description = "A rust tool meant to convert a golang struct to a type object of available languages."

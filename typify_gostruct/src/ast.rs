@@ -56,6 +56,7 @@ pub enum RequiredElements {
     LeftBrace,
     Identifier,
     Colon,
+    RightBracket,
 }
 
 impl Display for RequiredElements {
@@ -66,6 +67,7 @@ impl Display for RequiredElements {
             RequiredElements::LeftBrace => write!(f, "LeftBrace"),
             RequiredElements::Identifier => write!(f, "Identifier"),
             RequiredElements::Colon => write!(f, "Colon"),
+            RequiredElements::RightBracket => write!(f, "RightBracket"),
         }
     }
 }
