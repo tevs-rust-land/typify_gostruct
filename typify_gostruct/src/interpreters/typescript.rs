@@ -36,7 +36,7 @@ impl TypeScriptInterpreter {
         }
     }
     fn interpret_struct(&self, declaration: StructDeclaration) -> String {
-        let mut result = format!("export interface {} = ", declaration.name);
+        let mut result = format!("\n export interface {} = ", declaration.name);
         result.push(OPENING_BRACKET);
 
         for item in declaration.body {

@@ -36,7 +36,7 @@ impl FlowInterpreter {
         }
     }
     fn interpret_struct(&self, declaration: StructDeclaration) -> String {
-        let mut result = format!("export type {} = ", declaration.name);
+        let mut result = format!("\n export type {} = ", declaration.name);
         result.push(OPENING_BRACKET);
 
         for item in declaration.body {
