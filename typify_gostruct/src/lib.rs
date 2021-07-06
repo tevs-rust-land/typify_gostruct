@@ -102,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+
     fn should_return_error_if_struct_isnt_valid() {
         let input = r#"
             type Region struct {
@@ -110,8 +110,21 @@ mod tests {
             State string
         "#;
         let source = super::Source::new(input);
-        source
-            .transform_to("typescript")
-            .expect("The struct has a missing right brace and so it should fail to parse");
+        let result = source.transform_to("typescript");
+
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn should_parse_embedded_structs_correctly() {
+        let input = r#"
+        type Region struct {
+        Country
+        State string
+    }
+    "#;
+        let source = super::Source::new(input);
+        let result = source.transform_to("typescript");
+        assert!(result.is_ok())
     }
 }

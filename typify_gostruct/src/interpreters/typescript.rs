@@ -57,7 +57,7 @@ impl TypeScriptInterpreter {
                     super::FieldType::Normal(field_type) => {
                         format!("{} : {},", field_name.0, field_type)
                     }
-                    super::FieldType::Embedded => format!("...{}", field_name.0),
+                    super::FieldType::Embedded => format!("...{}, ", field_name.0),
                 }
             }
             Field::WithTags(field_name, field_type, field_tags) => {
@@ -103,7 +103,7 @@ impl TypeScriptInterpreter {
         }
         match field_type {
             super::FieldType::Normal(field_type) => format!("{} : {}, ", field_name, field_type),
-            super::FieldType::Embedded => format!("...{}", field_name), // TODO: find out later if its possible to have embedded fields with with JSON tags
+            super::FieldType::Embedded => format!("...{}, ", field_name), // TODO: find out later if its possible to have embedded fields with with JSON tags
         }
     }
 }
