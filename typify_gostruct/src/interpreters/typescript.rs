@@ -70,7 +70,7 @@ impl TypeScriptInterpreter {
     }
 
     fn convert_field_type(&self, field_type: FieldType) -> super::FieldType {
-        let single_of_list = match field_type {
+        let single_or_list_item_notation = match field_type {
             FieldType::List(_) => "[]",
             FieldType::One(_) => "",
         };
@@ -80,9 +80,10 @@ impl TypeScriptInterpreter {
         };
 
         match field_type {
-            super::FieldType::Normal(specified_type) => {
-                super::FieldType::Normal(format!("{}{}", single_of_list, specified_type))
-            }
+            super::FieldType::Normal(specified_type) => super::FieldType::Normal(format!(
+                "{}{}",
+                specified_type, single_or_list_item_notation
+            )),
             super::FieldType::Embedded => super::FieldType::Embedded,
         }
     }
